@@ -1,0 +1,1249 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>KeyVault - ID & パスワード統合管理</title>
+    <!-- iOS / PWA 対応メタタグ -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="KeyVault">
+    <meta name="theme-color" content="#0f172a">
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            900: '#312e81',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts Inter & Noto Sans JP -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', 'Noto Sans JP', sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e293b;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+        .card-glass {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .credit-card-preview {
+            background: linear-gradient(135deg, #312e81 0%, #1e1b4b 50%, #0f172a 100%);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.2);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased selection:bg-brand-500 selection:text-white">
+
+    <header class="border-b border-slate-800 bg-slate-900/80 sticky top-0 z-30 backdrop-blur-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-400 flex items-center justify-center text-white shadow-lg shadow-brand-500/20">
+                    <i class="fa-solid fa-shield-halved text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
+                        KeyVault
+                        <span class="text-xs px-2 py-0.5 rounded-full bg-brand-500/20 text-brand-300 border border-brand-500/30">Secure</span>
+                    </h1>
+                    <p class="text-xs text-slate-400">ID・パスワード・カード一括管理</p>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-3">
+                <!-- パスワード生成器クイック起動ボタン -->
+                <button onclick="openGeneratorModal()" class="px-3 py-2 text-sm font-medium rounded-xl text-slate-300 hover:text-white hover:bg-slate-800 transition border border-slate-700 flex items-center gap-2">
+                    <i class="fa-solid fa-key text-amber-400"></i>
+                    <span class="hidden sm:inline">PW自動生成</span>
+                </button>
+                <!-- 新規登録ボタン -->
+                <button onclick="openItemModal()" class="px-4 py-2 text-sm font-medium rounded-xl text-white bg-brand-600 hover:bg-brand-500 transition shadow-lg shadow-brand-600/30 flex items-center gap-2">
+                    <i class="fa-solid fa-plus"></i>
+                    <span>サービスを追加</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+        
+        <!-- 検索・統計・アクションバー -->
+        <div class="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+            <!-- 検索入力 -->
+            <div class="relative flex-1 max-w-lg">
+                <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                <input type="text" id="searchInput" oninput="renderItems()" placeholder="サービス名、ID、URLで検索..." 
+                       class="w-full bg-slate-800/90 border border-slate-700 text-white rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 placeholder-slate-500 transition">
+            </div>
+
+            <!-- 件数情報 -->
+            <div class="flex items-center justify-between md:justify-end gap-3 text-sm text-slate-400">
+                <span id="itemCountBadge" class="bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700/60 font-medium text-slate-300">
+                    登録数: 0 件
+                </span>
+                <button onclick="exportData()" title="データ書き出し (JSON)" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition">
+                    <i class="fa-solid fa-download"></i>
+                </button>
+                <label title="データ読み込み (JSON)" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 cursor-pointer transition">
+                    <i class="fa-solid fa-upload"></i>
+                    <input type="file" id="importFileInput" onchange="importData(event)" accept=".json" class="hidden">
+                </label>
+            </div>
+        </div>
+
+        <!-- カテゴリータブ -->
+        <div class="border-b border-slate-800 flex overflow-x-auto gap-2 pb-2 scrollbar-none" id="categoryTabs">
+            <!-- JSで動的生成、または静的バインディング -->
+        </div>
+
+        <!-- 登録アイテム一覧表示グリッド -->
+        <div id="itemsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            <!-- JSでアイテムカードを出力 -->
+        </div>
+
+        <!-- 空表示ステート -->
+        <div id="emptyState" class="hidden text-center py-16 px-4">
+            <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-slate-800/80 border border-slate-700 flex items-center justify-center text-slate-500 text-2xl">
+                <i class="fa-regular fa-folder-open"></i>
+            </div>
+            <h3 class="text-base font-semibold text-slate-300 mb-1">登録されている情報がありません</h3>
+            <p class="text-sm text-slate-500 mb-5 max-w-sm mx-auto">「サービスを追加」ボタンからウェブサイト、SNS、銀行、クレジットカード情報を登録してください。</p>
+            <button onclick="openItemModal()" class="px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white rounded-xl text-sm font-medium transition shadow-md shadow-brand-500/20">
+                <i class="fa-solid fa-plus mr-1"></i> 新規サービスを登録
+            </button>
+        </div>
+
+    </main>
+
+    <!-- 新規登録・編集モーダル -->
+    <div id="itemModal" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm hidden items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-slate-900 border border-slate-800 w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden my-8 animate-in fade-in zoom-in-95 duration-200">
+            <!-- モーダルヘッダー -->
+            <div class="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-800/40">
+                <h3 id="modalTitle" class="text-base font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-file-pen text-brand-400"></i>
+                    <span>サービスの登録</span>
+                </h3>
+                <button onclick="closeItemModal()" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <!-- フォームコンテンツ -->
+            <form id="itemForm" onsubmit="handleFormSubmit(event)" class="p-6 space-y-5">
+                <input type="hidden" id="itemId">
+
+                <!-- カテゴリ選択 -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">カテゴリー <span class="text-rose-400">*</span></label>
+                    <div class="grid grid-cols-2 sm:grid-cols-5 gap-2" id="categoryRadioGroup">
+                        <!-- JSでカテゴリーボタングループ生成 -->
+                    </div>
+                </div>
+
+                <!-- サービス名 & URL -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">ウェブサイト / サービス名 <span class="text-rose-400">*</span></label>
+                        <input type="text" id="itemTitle" required placeholder="例: Amazon, X(Twitter), 三菱UFJ銀行"
+                               class="w-full bg-slate-800 border border-slate-700 text-white rounded-xl px-3.5 py-2 text-sm focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">サイトURL (任意)</label>
+                        <input type="url" id="itemUrl" placeholder="https://example.com"
+                               class="w-full bg-slate-800 border border-slate-700 text-white rounded-xl px-3.5 py-2 text-sm focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition">
+                    </div>
+                </div>
+
+                <!-- ログインID & パスワード -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">ユーザーID / メールアドレス <span class="text-rose-400">*</span></label>
+                        <input type="text" id="itemUsername" required placeholder="user@example.com または ユーザー名"
+                               class="w-full bg-slate-800 border border-slate-700 text-white rounded-xl px-3.5 py-2 text-sm focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition">
+                    </div>
+                    <div>
+                        <div class="flex items-center justify-between mb-1.5">
+                            <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider">パスワード <span class="text-rose-400">*</span></label>
+                            <button type="button" onclick="insertGeneratedPasswordIntoForm()" class="text-xs text-brand-400 hover:text-brand-300 font-medium flex items-center gap-1">
+                                <i class="fa-solid fa-wand-magic-sparkles"></i> 自動生成
+                            </button>
+                        </div>
+                        <div class="relative">
+                            <input type="password" id="itemPassword" required placeholder="パスワードを入力"
+                                   class="w-full bg-slate-800 border border-slate-700 text-white rounded-xl pl-3.5 pr-10 py-2 text-sm focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition font-mono">
+                            <button type="button" onclick="togglePasswordVisibility('itemPassword', this)" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200">
+                                <i class="fa-regular fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- クレジットカード専用セクション (カテゴリがカードの時のみ表示) -->
+                <div id="creditCardSection" class="p-4 rounded-xl bg-slate-800/70 border border-indigo-500/30 space-y-4">
+                    <div class="flex items-center justify-between border-b border-slate-700/60 pb-2.5">
+                        <span class="text-xs font-bold text-indigo-300 flex items-center gap-1.5 uppercase tracking-wider">
+                            <i class="fa-solid fa-credit-card text-indigo-400"></i> クレジットカード詳細 & AI OCR読取
+                        </span>
+                        <span class="text-[11px] px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-medium">
+                            Gemini 3 Flash 読取対応
+                        </span>
+                    </div>
+
+                    <!-- 画像アップロード & AI OCR -->
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1.5">
+                            カード画像から自動読み取り
+                            <span class="text-slate-400 text-[11px] font-normal ml-1">（カード番号・有効期限・名義人をAIが自動抽出）</span>
+                        </label>
+                        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                            <label class="flex-1 cursor-pointer flex items-center justify-center gap-2 px-4 py-2.5 border-2 border-dashed border-slate-600 hover:border-indigo-400 rounded-xl bg-slate-800/50 hover:bg-slate-800 text-slate-300 transition group text-sm">
+                                <i class="fa-solid fa-camera text-indigo-400 group-hover:scale-110 transition"></i>
+                                <span id="ocrStatusText">カード写真を選択または撮影</span>
+                                <input type="file" id="cardImageInput" accept="image/*" onchange="handleCardImageOCR(event)" class="hidden">
+                            </label>
+                            <button type="button" id="clearCardFieldsBtn" onclick="clearCreditCardFields()" class="px-3 py-2 text-xs text-slate-400 hover:text-slate-200 rounded-lg hover:bg-slate-700 border border-slate-700 transition">
+                                カード項目クリア
+                            </button>
+                        </div>
+                        <!-- OCRローディング表示 -->
+                        <div id="ocrLoading" class="hidden items-center gap-2 mt-2 text-xs text-indigo-400 bg-indigo-950/40 border border-indigo-500/30 px-3 py-2 rounded-lg">
+                            <i class="fa-solid fa-circle-notch fa-spin"></i>
+                            <span>Geminiがカード画像を解析中... カード番号・名義人・有効期限を読み取っています</span>
+                        </div>
+                    </div>
+
+                    <!-- カード詳細情報入力フィールド -->
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div class="sm:col-span-2">
+                            <label class="block text-[11px] font-semibold text-slate-400 uppercase mb-1">カード番号</label>
+                            <input type="text" id="cardPan" placeholder="1234 5678 9012 3456" maxlength="23"
+                                   class="w-full bg-slate-900 border border-slate-700 text-white rounded-lg px-3 py-1.5 text-sm font-mono tracking-wider focus:outline-none focus:border-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-400 uppercase mb-1">有効期限 (MM/YY)</label>
+                            <input type="text" id="cardExpiry" placeholder="12/28" maxlength="5"
+                                   class="w-full bg-slate-900 border border-slate-700 text-white rounded-lg px-3 py-1.5 text-sm font-mono focus:outline-none focus:border-indigo-500">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-400 uppercase mb-1">カード名義人 (半角英字)</label>
+                            <input type="text" id="cardHolder" placeholder="TARO YAMADA"
+                                   class="w-full bg-slate-900 border border-slate-700 text-white rounded-lg px-3 py-1.5 text-sm uppercase focus:outline-none focus:border-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-400 uppercase mb-1">ブランド / カード会社</label>
+                            <input type="text" id="cardBrand" placeholder="VISA / Mastercard / JCB 等"
+                                   class="w-full bg-slate-900 border border-slate-700 text-white rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-indigo-500">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- メモ欄 -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">備考・メモ (任意)</label>
+                    <textarea id="itemNotes" rows="2" placeholder="暗証番号ヒント、セキュリティ質問、契約番号など"
+                              class="w-full bg-slate-800 border border-slate-700 text-white rounded-xl px-3.5 py-2 text-sm focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition resize-none"></textarea>
+                </div>
+
+                <!-- モーダルフッター -->
+                <div class="pt-3 border-t border-slate-800 flex items-center justify-end gap-3">
+                    <button type="button" onclick="closeItemModal()" class="px-4 py-2 text-sm font-medium text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 transition">
+                        キャンセル
+                    </button>
+                    <button type="submit" class="px-5 py-2 text-sm font-semibold text-white bg-brand-600 hover:bg-brand-500 rounded-xl transition shadow-lg shadow-brand-600/30 flex items-center gap-2">
+                        <i class="fa-solid fa-check"></i>
+                        <span id="saveBtnText">保存する</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- パスワード自動生成モーダル -->
+    <div id="generatorModal" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm hidden items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 w-full max-w-md rounded-2xl shadow-2xl p-6 space-y-6">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+                <h3 class="text-base font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-key text-amber-400"></i>
+                    <span>パスワード自動生成ツール</span>
+                </h3>
+                <button onclick="closeGeneratorModal()" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <!-- 生成結果プレビュー -->
+            <div class="space-y-2">
+                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">生成されたパスワード</label>
+                <div class="relative flex items-center">
+                    <input type="text" id="genResultOutput" readonly
+                           class="w-full bg-slate-950 border border-slate-700 text-amber-400 font-mono text-base font-bold tracking-wider rounded-xl px-4 py-3 pr-24 focus:outline-none select-all">
+                    <div class="absolute right-2 flex items-center gap-1">
+                        <button type="button" onclick="generateRandomPassword()" title="再生成" class="p-2 text-slate-400 hover:text-amber-400 rounded-lg hover:bg-slate-800 transition">
+                            <i class="fa-solid fa-arrows-rotate"></i>
+                        </button>
+                        <button type="button" onclick="copyFromInput('genResultOutput')" title="コピー" class="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition">
+                            <i class="fa-regular fa-copy"></i>
+                        </button>
+                    </div>
+                </div>
+                <!-- 強度インジケーター -->
+                <div class="flex items-center justify-between pt-1">
+                    <div class="flex-1 bg-slate-800 h-1.5 rounded-full overflow-hidden mr-3">
+                        <div id="genStrengthBar" class="h-full bg-emerald-500 w-full transition-all duration-300"></div>
+                    </div>
+                    <span id="genStrengthLabel" class="text-[11px] font-bold text-emerald-400">強固</span>
+                </div>
+            </div>
+
+            <!-- 桁数選択ボタン (12, 16, 20文字) ※8文字は危険なため廃止 -->
+            <div class="space-y-2">
+                <div class="flex items-center justify-between">
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">文字数（桁数）</label>
+                    <span class="text-[10px] text-emerald-400 font-medium">※安全基準に基づき12文字以上のみ対応</span>
+                </div>
+                <div class="grid grid-cols-3 gap-2">
+                    <button type="button" onclick="selectLength(12)" id="lenBtn-12" class="len-btn py-2.5 rounded-xl border border-slate-700 font-semibold text-sm transition">
+                        12 桁
+                    </button>
+                    <button type="button" onclick="selectLength(16)" id="lenBtn-16" class="len-btn py-2.5 rounded-xl border border-slate-700 font-semibold text-sm transition">
+                        16 桁 (標準)
+                    </button>
+                    <button type="button" onclick="selectLength(20)" id="lenBtn-20" class="len-btn py-2.5 rounded-xl border border-slate-700 font-semibold text-sm transition">
+                        20 桁 (最強)
+                    </button>
+                </div>
+            </div>
+
+            <!-- 文字種別オプション -->
+            <div class="space-y-2.5 pt-1">
+                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">含む文字の種類</label>
+                <div class="grid grid-cols-2 gap-2 text-xs">
+                    <label class="flex items-center space-x-2 p-2 bg-slate-800/60 rounded-lg cursor-pointer hover:bg-slate-800 transition">
+                        <input type="checkbox" id="optUpper" checked onchange="generateRandomPassword()" class="rounded bg-slate-700 border-slate-600 text-brand-500 focus:ring-0">
+                        <span class="text-slate-200">大文字 (A-Z)</span>
+                    </label>
+                    <label class="flex items-center space-x-2 p-2 bg-slate-800/60 rounded-lg cursor-pointer hover:bg-slate-800 transition">
+                        <input type="checkbox" id="optLower" checked onchange="generateRandomPassword()" class="rounded bg-slate-700 border-slate-600 text-brand-500 focus:ring-0">
+                        <span class="text-slate-200">小文字 (a-z)</span>
+                    </label>
+                    <label class="flex items-center space-x-2 p-2 bg-slate-800/60 rounded-lg cursor-pointer hover:bg-slate-800 transition">
+                        <input type="checkbox" id="optNumbers" checked onchange="generateRandomPassword()" class="rounded bg-slate-700 border-slate-600 text-brand-500 focus:ring-0">
+                        <span class="text-slate-200">数字 (0-9)</span>
+                    </label>
+                    <label class="flex items-center space-x-2 p-2 bg-slate-800/60 rounded-lg cursor-pointer hover:bg-slate-800 transition">
+                        <input type="checkbox" id="optSymbols" checked onchange="generateRandomPassword()" class="rounded bg-slate-700 border-slate-600 text-brand-500 focus:ring-0">
+                        <span class="text-slate-200">記号 (!@#$%&*)</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- アクションボタン -->
+            <div class="pt-2 flex items-center justify-between gap-3">
+                <button type="button" onclick="closeGeneratorModal()" class="w-full py-2.5 rounded-xl border border-slate-700 text-slate-300 hover:text-white hover:bg-slate-800 text-sm font-medium transition">
+                    閉じる
+                </button>
+                <button type="button" onclick="applyGeneratedPasswordToForm()" id="applyPasswordBtn" class="w-full py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-sm font-semibold transition shadow-lg shadow-brand-600/30 flex items-center justify-center gap-1.5">
+                    <i class="fa-solid fa-check"></i>
+                    <span>パスワードに採用</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 削除確認モーダル -->
+    <div id="deleteModal" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm hidden items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 w-full max-w-sm rounded-2xl shadow-2xl p-6 text-center space-y-4">
+            <div class="w-12 h-12 rounded-full bg-rose-500/20 text-rose-400 mx-auto flex items-center justify-center text-xl">
+                <i class="fa-solid fa-trash-can"></i>
+            </div>
+            <div>
+                <h4 class="text-base font-bold text-white mb-1">登録情報を削除しますか？</h4>
+                <p id="deleteTargetName" class="text-xs text-slate-400">この操作は元に戻せません。</p>
+            </div>
+            <div class="flex items-center gap-3 pt-2">
+                <button type="button" onclick="closeDeleteModal()" class="w-1/2 py-2 rounded-xl border border-slate-700 text-slate-300 hover:bg-slate-800 text-sm transition">
+                    キャンセル
+                </button>
+                <button type="button" id="confirmDeleteBtn" class="w-1/2 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-semibold text-sm transition shadow-lg shadow-rose-600/30">
+                    削除する
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- トースト通知コンテナ -->
+    <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none flex items-center gap-3 px-4 py-3 rounded-xl shadow-2xl text-sm font-medium border">
+        <i id="toastIcon" class="fa-solid fa-check"></i>
+        <span id="toastMessage">完了しました</span>
+    </div>
+
+    <script>
+        // カテゴリー一覧定義
+        const CATEGORIES = [
+            { id: 'all', name: 'すべて', icon: 'fa-solid fa-layer-group', color: 'slate' },
+            { id: 'sns', name: 'SNS', icon: 'fa-solid fa-hashtag', color: 'sky' },
+            { id: 'bank', name: '銀行・金融', icon: 'fa-solid fa-building-columns', color: 'emerald' },
+            { id: 'card', name: 'クレジットカード', icon: 'fa-solid fa-credit-card', color: 'indigo' },
+            { id: 'ec', name: 'EC・通販', icon: 'fa-solid fa-cart-shopping', color: 'amber' },
+            { id: 'other', name: 'その他・ツール', icon: 'fa-solid fa-globe', color: 'purple' }
+        ];
+
+        // 初期サンプルデータ（ユーザーが初回起動時に確認しやすいよう設定）
+        const INITIAL_ITEMS = [
+            {
+                id: 'item-1',
+                category: 'sns',
+                title: 'X (旧Twitter)',
+                url: 'https://twitter.com',
+                username: 'user_tech_pro',
+                password: 'pW#9xK!7vL$2026',
+                notes: '二段階認証(2FA)有効化済み',
+                createdAt: Date.now() - 86400000 * 3
+            },
+            {
+                id: 'item-2',
+                category: 'bank',
+                title: '三菱UFJ銀行',
+                url: 'https://direct.bk.mufg.jp',
+                username: '12345678',
+                password: 'Bnk$Secure#2026',
+                notes: 'ワンタイムパスワードアプリ使用',
+                createdAt: Date.now() - 86400000 * 2
+            },
+            {
+                id: 'item-3',
+                category: 'card',
+                title: '三井住友カード (NL)',
+                url: 'https://www.smbc-card.com',
+                username: 'smbc_account_99',
+                password: 'Card!Pass#9182',
+                cardPan: '4980 1234 5678 9012',
+                cardExpiry: '09/29',
+                cardHolder: 'TARO YAMADA',
+                cardBrand: 'VISA',
+                notes: 'ポイント還元率アップ対象',
+                createdAt: Date.now() - 86400000
+            }
+        ];
+
+        // アプリケーション状態
+        let appState = {
+            items: [],
+            selectedCategory: 'all',
+            searchQuery: '',
+            currentLength: 20,
+            deleteTargetId: null
+        };
+
+        // ローカルストレージキー
+        const STORAGE_KEY = 'keyvault_accounts_v1';
+
+        window.addEventListener('DOMContentLoaded', () => {
+            loadStoredData();
+            initCategoryTabs();
+            initCategoryRadioGroup();
+            selectLength(20);
+            renderItems();
+        });
+
+        // データ読み込み
+        function loadStoredData() {
+            const raw = localStorage.getItem(STORAGE_KEY);
+            if (raw) {
+                try {
+                    appState.items = JSON.parse(raw);
+                } catch (e) {
+                    appState.items = INITIAL_ITEMS;
+                }
+            } else {
+                appState.items = INITIAL_ITEMS;
+                saveData();
+            }
+        }
+
+        // データ保存
+        function saveData() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(appState.items));
+        }
+
+        // カテゴリータブの初期化
+        function initCategoryTabs() {
+            const container = document.getElementById('categoryTabs');
+            container.innerHTML = CATEGORIES.map(cat => `
+                <button onclick="setCategoryFilter('${cat.id}')" id="tab-${cat.id}"
+                        class="px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition flex items-center gap-2 ${
+                            appState.selectedCategory === cat.id 
+                            ? 'bg-brand-600 text-white shadow-md shadow-brand-600/30' 
+                            : 'bg-slate-800/60 text-slate-400 hover:text-white hover:bg-slate-800'
+                        }">
+                    <i class="${cat.icon}"></i>
+                    <span>${cat.name}</span>
+                </button>
+            `).join('');
+        }
+
+        // モーダル内のカテゴリー選択ボタングループ生成
+        function initCategoryRadioGroup() {
+            const container = document.getElementById('categoryRadioGroup');
+            const selectableCats = CATEGORIES.filter(c => c.id !== 'all');
+            container.innerHTML = selectableCats.map((cat, idx) => `
+                <label class="cursor-pointer">
+                    <input type="radio" name="itemCategory" value="${cat.id}" ${idx === 0 ? 'checked' : ''} onchange="onCategoryRadioChange(this.value)" class="peer hidden">
+                    <div class="p-2.5 rounded-xl border border-slate-700 bg-slate-800/60 peer-checked:border-brand-500 peer-checked:bg-brand-500/20 peer-checked:text-white text-slate-400 text-center transition flex flex-col items-center gap-1">
+                        <i class="${cat.icon} text-sm"></i>
+                        <span class="text-[11px] font-semibold">${cat.name}</span>
+                    </div>
+                </label>
+            `).join('');
+        }
+
+        function setCategoryFilter(categoryId) {
+            appState.selectedCategory = categoryId;
+            initCategoryTabs();
+            renderItems();
+        }
+
+        function renderItems() {
+            const searchInput = document.getElementById('searchInput');
+            const query = searchInput.value.trim().toLowerCase();
+            const container = document.getElementById('itemsContainer');
+            const emptyState = document.getElementById('emptyState');
+            const countBadge = document.getElementById('itemCountBadge');
+
+            // フィルタリング処理
+            const filtered = appState.items.filter(item => {
+                const matchesCategory = (appState.selectedCategory === 'all') || (item.category === appState.selectedCategory);
+                const matchesSearch = !query || 
+                    (item.title && item.title.toLowerCase().includes(query)) ||
+                    (item.username && item.username.toLowerCase().includes(query)) ||
+                    (item.url && item.url.toLowerCase().includes(query)) ||
+                    (item.notes && item.notes.toLowerCase().includes(query)) ||
+                    (item.cardPan && item.cardPan.includes(query)) ||
+                    (item.cardHolder && item.cardHolder.toLowerCase().includes(query));
+                return matchesCategory && matchesSearch;
+            });
+
+            countBadge.innerText = `表示中: ${filtered.length} / ${appState.items.length} 件`;
+
+            if (filtered.length === 0) {
+                container.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+            container.innerHTML = filtered.map(item => createItemCardHTML(item)).join('');
+        }
+
+        // アイテムカードのHTML生成
+        function createItemCardHTML(item) {
+            const isCard = item.category === 'card';
+            const catObj = CATEGORIES.find(c => c.id === item.category) || { name: 'その他', icon: 'fa-solid fa-folder', color: 'slate' };
+
+            // クレジットカード表示用
+            const cardMasked = item.cardPan ? item.cardPan.replace(/\d(?=\d{4})/g, "•") : '';
+
+            return `
+                <div class="card-glass rounded-2xl p-5 hover:border-slate-600 transition-all duration-200 flex flex-col justify-between group shadow-xl">
+                    <div class="space-y-4">
+                        <!-- カードヘッダー -->
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700/80 flex items-center justify-center text-brand-400 group-hover:scale-105 transition">
+                                    <i class="${catObj.icon} text-base"></i>
+                                </div>
+                                <div>
+                                    <h3 class="text-sm font-bold text-white group-hover:text-brand-300 transition line-clamp-1">${escapeHtml(item.title)}</h3>
+                                    <div class="flex items-center gap-2 mt-0.5">
+                                        <span class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700/70">
+                                            ${catObj.name}
+                                        </span>
+                                        ${item.url ? `
+                                            <a href="${escapeHtml(item.url)}" target="_blank" rel="noopener noreferrer" class="text-xs text-slate-400 hover:text-brand-400 flex items-center gap-1 transition" title="リンク先を開く">
+                                                <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+                                            </a>
+                                        ` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-1">
+                                <button onclick="openEditItemModal('${item.id}')" title="編集" class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition">
+                                    <i class="fa-solid fa-pen-to-square text-xs"></i>
+                                </button>
+                                <button onclick="promptDeleteItem('${item.id}')" title="削除" class="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-slate-800 transition">
+                                    <i class="fa-solid fa-trash-can text-xs"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- クレジットカード専用のプレビューバッジ -->
+                        ${isCard && item.cardPan ? `
+                            <div class="credit-card-preview rounded-xl p-3.5 text-white space-y-2 relative overflow-hidden">
+                                <div class="flex justify-between items-center text-xs opacity-80">
+                                    <span class="tracking-widest font-mono">${escapeHtml(item.cardBrand || 'CREDIT CARD')}</span>
+                                    <i class="fa-solid fa-wifi text-[10px] rotate-90"></i>
+                                </div>
+                                <div class="font-mono text-sm tracking-wider font-bold text-amber-200">
+                                    ${escapeHtml(cardMasked || item.cardPan)}
+                                </div>
+                                <div class="flex justify-between items-center text-[10px] font-mono text-slate-300 pt-1">
+                                    <span class="uppercase truncate max-w-[120px]">${escapeHtml(item.cardHolder || 'CARD HOLDER')}</span>
+                                    <span>EXP: ${escapeHtml(item.cardExpiry || '--/--')}</span>
+                                </div>
+                            </div>
+                        ` : ''}
+
+                        <!-- ID / ユーザー名フィールド -->
+                        <div class="bg-slate-900/80 rounded-xl p-2.5 border border-slate-800 flex items-center justify-between">
+                            <div class="min-w-0 pr-2">
+                                <span class="text-[10px] uppercase font-bold text-slate-500 block">ID / ユーザー名</span>
+                                <span class="text-xs text-slate-200 font-mono truncate block select-all">${escapeHtml(item.username)}</span>
+                            </div>
+                            <button onclick="copyToClipboard('${escapeJs(item.username)}', 'IDをコピーしました')" title="IDをコピー" class="p-1.5 rounded-lg text-slate-400 hover:text-brand-400 hover:bg-slate-800 transition">
+                                <i class="fa-regular fa-copy text-xs"></i>
+                            </button>
+                        </div>
+
+                        <!-- パスワードフィールド -->
+                        <div class="bg-slate-900/80 rounded-xl p-2.5 border border-slate-800 flex items-center justify-between">
+                            <div class="min-w-0 pr-2 flex-1">
+                                <span class="text-[10px] uppercase font-bold text-slate-500 block">パスワード</span>
+                                <div class="flex items-center gap-2">
+                                    <span id="pw-text-${item.id}" class="text-xs text-slate-200 font-mono tracking-wider truncate block" data-masked="true">
+                                        ••••••••••••
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-1">
+                                <button onclick="toggleCardPasswordVisibility('${item.id}', '${escapeJs(item.password)}', this)" title="表示切替" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition">
+                                    <i class="fa-regular fa-eye text-xs"></i>
+                                </button>
+                                <button onclick="copyToClipboard('${escapeJs(item.password)}', 'パスワードをコピーしました')" title="パスワードをコピー" class="p-1.5 rounded-lg text-slate-400 hover:text-brand-400 hover:bg-slate-800 transition">
+                                    <i class="fa-regular fa-copy text-xs"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 備考/メモ (存在する場合) -->
+                        ${item.notes ? `
+                            <p class="text-xs text-slate-400 bg-slate-950/40 p-2 rounded-lg border border-slate-800/50 line-clamp-2">
+                                <i class="fa-solid fa-circle-info text-[10px] text-slate-500 mr-1"></i>${escapeHtml(item.notes)}
+                            </p>
+                        ` : ''}
+                    </div>
+
+                    <div class="pt-3 mt-3 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-500">
+                        <span>登録: ${formatDate(item.createdAt)}</span>
+                        ${isCard && item.cardPan ? `
+                            <button onclick="copyToClipboard('${escapeJs(item.cardPan)}', 'カード番号をコピーしました')" class="text-indigo-400 hover:text-indigo-300 font-medium">
+                                番号コピー
+                            </button>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        function openGeneratorModal() {
+            document.getElementById('generatorModal').classList.remove('hidden');
+            document.getElementById('generatorModal').classList.add('flex');
+            generateRandomPassword();
+        }
+
+        function closeGeneratorModal() {
+            document.getElementById('generatorModal').classList.add('hidden');
+            document.getElementById('generatorModal').classList.remove('flex');
+        }
+
+        function selectLength(len) {
+            appState.currentLength = len;
+            [12, 16, 20].forEach(l => {
+                const btn = document.getElementById(`lenBtn-${l}`);
+                if (btn) {
+                    if (l === len) {
+                        if (l === 20) {
+                            btn.className = 'len-btn py-2.5 rounded-xl border border-indigo-400 bg-gradient-to-r from-brand-600 to-indigo-600 text-white font-bold text-sm transition shadow-lg shadow-indigo-500/25';
+                        } else {
+                            btn.className = 'len-btn py-2.5 rounded-xl border border-brand-500 bg-brand-600 text-white font-semibold text-sm transition shadow-md shadow-brand-500/20';
+                        }
+                    } else {
+                        btn.className = 'len-btn py-2.5 rounded-xl border border-slate-700 bg-slate-800/60 text-slate-300 hover:bg-slate-800 font-semibold text-sm transition';
+                    }
+                }
+            });
+            generateRandomPassword();
+        }
+
+        function generateRandomPassword() {
+            const length = appState.currentLength;
+            const useUpper = document.getElementById('optUpper').checked;
+            const useLower = document.getElementById('optLower').checked;
+            const useNumbers = document.getElementById('optNumbers').checked;
+            const useSymbols = document.getElementById('optSymbols').checked;
+
+            const uppers = "ABCDEFGHJKLMNPQRSTUVWXYZ"; // 紛らわしいI, Oを除外
+            const lowers = "abcdefghijkmnopqrstuvwxyz"; // 紛らわしいlを除外
+            const numbers = "23456789";                  // 紛らわしい0, 1を除外
+            const symbols = "!@#$%^&*()_+-=[]{}|;:,.<>?";
+
+            let charPool = "";
+            let guaranteed = [];
+
+            if (useUpper) { charPool += uppers; guaranteed.push(uppers[Math.floor(Math.random() * uppers.length)]); }
+            if (useLower) { charPool += lowers; guaranteed.push(lowers[Math.floor(Math.random() * lowers.length)]); }
+            if (useNumbers) { charPool += numbers; guaranteed.push(numbers[Math.floor(Math.random() * numbers.length)]); }
+            if (useSymbols) { charPool += symbols; guaranteed.push(symbols[Math.floor(Math.random() * symbols.length)]); }
+
+            if (charPool === "") {
+                charPool = lowers + numbers;
+            }
+
+            let result = [...guaranteed];
+            for (let i = result.length; i < length; i++) {
+                const randIndex = Math.floor(Math.random() * charPool.length);
+                result.push(charPool[randIndex]);
+            }
+
+            // シャッフル
+            for (let i = result.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [result[i], result[j]] = [result[j], result[i]];
+            }
+
+            const finalPassword = result.join('');
+            document.getElementById('genResultOutput').value = finalPassword;
+            updateStrengthMeter(length);
+        }
+
+        function updateStrengthMeter(length) {
+            const bar = document.getElementById('genStrengthBar');
+            const label = document.getElementById('genStrengthLabel');
+
+            if (length <= 12) {
+                bar.style.width = '60%';
+                bar.className = 'h-full bg-blue-500 w-full transition-all duration-300';
+                label.innerText = '安全 (12桁)';
+                label.className = 'text-[11px] font-bold text-blue-400';
+            } else if (length <= 16) {
+                bar.style.width = '85%';
+                bar.className = 'h-full bg-emerald-500 w-full transition-all duration-300';
+                label.innerText = '極めて強固 (16桁)';
+                label.className = 'text-[11px] font-bold text-emerald-400';
+            } else {
+                bar.style.width = '100%';
+                bar.className = 'h-full bg-gradient-to-r from-emerald-400 to-indigo-400 w-full transition-all duration-300';
+                label.innerText = '最強・鉄壁 (20桁)';
+                label.className = 'text-[11px] font-extrabold text-indigo-300';
+            }
+        }
+
+        function insertGeneratedPasswordIntoForm() {
+            // パスワード入力欄に直接「20桁の最強パスワード」を即時注入
+            const pass = generateInlinePassword(20);
+            document.getElementById('itemPassword').value = pass;
+            showToast('20桁の最強パスワードを自動セットしました');
+        }
+
+        function generateInlinePassword(length = 20) {
+            const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%^&*()_+";
+            let res = "";
+            for (let i = 0; i < length; i++) {
+                res += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return res;
+        }
+
+        function applyGeneratedPasswordToForm() {
+            const pass = document.getElementById('genResultOutput').value;
+            if (!pass) return;
+
+            // アイテムモーダルが開いていればそこに反映
+            const itemModal = document.getElementById('itemModal');
+            if (!itemModal.classList.contains('hidden')) {
+                document.getElementById('itemPassword').value = pass;
+                closeGeneratorModal();
+                showToast('パスワード入力欄に適用しました');
+            } else {
+                // 開いていなければクリップボードにコピー
+                copyToClipboard(pass, '生成したパスワードをクリップボードにコピーしました');
+                closeGeneratorModal();
+            }
+        }
+
+        // クレジットカード画像からGemini 3 Flashでカード情報を読み取る
+        async function handleCardImageOCR(event) {
+            const file = event.target.files?.[0];
+            if (!file) return;
+
+            const loadingEl = document.getElementById('ocrLoading');
+            const statusText = document.getElementById('ocrStatusText');
+            loadingEl.classList.remove('hidden');
+            loadingEl.classList.add('flex');
+            statusText.innerText = file.name;
+
+            try {
+                // 画像をBase64に変換
+                const base64Data = await fileToBase64(file);
+                const mimeType = file.type || 'image/jpeg';
+
+                const prompt = `このクレジットカードの画像から情報を読み取り、必ず有効なJSONオブジェクトのみを出力してください。
+Markdownブロック(\`\`\`json)などは付けずにプレーンなJSONテキストのみを返してください。
+キーは以下の形式に厳密に従ってください:
+{
+  "cardNumber": "カード番号(16桁またはハイフンやスペース区切り)",
+  "expiry": "有効期限(MM/YY形式)",
+  "cardHolder": "カード名義人氏名(ローマ字)",
+  "brand": "VISA, Mastercard, JCB, AMEXなどのブランド名"
+}
+読み取れなかった項目は空文字 "" にしてください。セキュリティコード(CVV/CVC)は取得しないでください。`;
+
+                const payload = {
+                    contents: [
+                        {
+                            role: "user",
+                            parts: [
+                                { text: prompt },
+                                {
+                                    inlineData: {
+                                        mimeType: mimeType,
+                                        data: base64Data
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                };
+
+                const apiKey = ""; // Canvas環境により自動付与
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+                let response = null;
+                // 指数バックオフによるAPI呼び出し
+                let delays = [1000, 2000, 4000];
+                for (let i = 0; i <= delays.length; i++) {
+                    try {
+                        response = await fetch(apiUrl, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+                        if (response.ok) break;
+                    } catch (err) {
+                        if (i === delays.length) throw err;
+                    }
+                    if (i < delays.length) await new Promise(r => setTimeout(r, delays[i]));
+                }
+
+                if (!response || !response.ok) {
+                    throw new Error(`APIリクエストに失敗しました: ${response?.status}`);
+                }
+
+                const result = await response.json();
+                const rawText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+
+                if (!rawText) {
+                    throw new Error("OCR結果が取得できませんでした");
+                }
+
+                // JSONの抽出・パース (```jsonで囲まれている場合も考慮)
+                let cleanedJson = rawText.trim();
+                if (cleanedJson.startsWith("```")) {
+                    cleanedJson = cleanedJson.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
+                }
+
+                const cardData = JSON.parse(cleanedJson);
+
+                // フォームに反映
+                if (cardData.cardNumber) {
+                    document.getElementById('cardPan').value = formatCardNumber(cardData.cardNumber);
+                }
+                if (cardData.expiry) {
+                    document.getElementById('cardExpiry').value = cardData.expiry;
+                }
+                if (cardData.cardHolder) {
+                    document.getElementById('cardHolder').value = cardData.cardHolder.toUpperCase();
+                }
+                if (cardData.brand) {
+                    document.getElementById('cardBrand').value = cardData.brand;
+                }
+
+                showToast('カード情報をAIで高精度に読み取りました！');
+            } catch (error) {
+                console.error("Card OCR Error:", error);
+                showToast('画像の読み取りに失敗しました。直接入力をお試しください。', true);
+            } finally {
+                loadingEl.classList.add('hidden');
+                loadingEl.classList.remove('flex');
+                event.target.value = ''; // リセット
+            }
+        }
+
+        function formatCardNumber(val) {
+            // 数字のみを抽出し4桁ごとにスペースを入れる
+            const digits = val.replace(/\D/g, '');
+            return digits.replace(/(\d{4})(?=\d)/g, '$1 ').trim();
+        }
+
+        function clearCreditCardFields() {
+            document.getElementById('cardPan').value = '';
+            document.getElementById('cardExpiry').value = '';
+            document.getElementById('cardHolder').value = '';
+            document.getElementById('cardBrand').value = '';
+            document.getElementById('ocrStatusText').innerText = 'カード写真を選択または撮影';
+            showToast('カード入力欄をクリアしました');
+        }
+
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => {
+                    const base64String = reader.result.split(',')[1];
+                    resolve(base64String);
+                };
+                reader.onerror = error => reject(error);
+            });
+        }
+
+        function onCategoryRadioChange(catVal) {
+            const ccSection = document.getElementById('creditCardSection');
+            if (catVal === 'card') {
+                ccSection.classList.remove('hidden');
+            } else {
+                ccSection.classList.add('hidden');
+            }
+        }
+
+        function openItemModal(itemId = null) {
+            const form = document.getElementById('itemForm');
+            form.reset();
+            document.getElementById('itemId').value = '';
+            document.getElementById('modalTitle').innerHTML = `
+                <i class="fa-solid fa-file-pen text-brand-400"></i>
+                <span>新規サービスの登録</span>
+            `;
+            document.getElementById('saveBtnText').innerText = '保存する';
+
+            // デフォルトカテゴリ（タブの選択カテゴリを引き継ぐ、allならsns）
+            const defaultCat = (appState.selectedCategory !== 'all') ? appState.selectedCategory : 'sns';
+            const radio = document.querySelector(`input[name="itemCategory"][value="${defaultCat}"]`);
+            if (radio) {
+                radio.checked = true;
+                onCategoryRadioChange(defaultCat);
+            }
+
+            document.getElementById('itemModal').classList.remove('hidden');
+            document.getElementById('itemModal').classList.add('flex');
+        }
+
+        function openEditItemModal(itemId) {
+            const item = appState.items.find(i => i.id === itemId);
+            if (!item) return;
+
+            document.getElementById('itemId').value = item.id;
+            document.getElementById('itemTitle').value = item.title || '';
+            document.getElementById('itemUrl').value = item.url || '';
+            document.getElementById('itemUsername').value = item.username || '';
+            document.getElementById('itemPassword').value = item.password || '';
+            document.getElementById('itemNotes').value = item.notes || '';
+
+            // カテゴリ
+            const radio = document.querySelector(`input[name="itemCategory"][value="${item.category}"]`);
+            if (radio) {
+                radio.checked = true;
+                onCategoryRadioChange(item.category);
+            }
+
+            // カード情報
+            document.getElementById('cardPan').value = item.cardPan || '';
+            document.getElementById('cardExpiry').value = item.cardExpiry || '';
+            document.getElementById('cardHolder').value = item.cardHolder || '';
+            document.getElementById('cardBrand').value = item.cardBrand || '';
+
+            document.getElementById('modalTitle').innerHTML = `
+                <i class="fa-solid fa-pen-to-square text-brand-400"></i>
+                <span>登録情報の編集</span>
+            `;
+            document.getElementById('saveBtnText').innerText = '更新する';
+
+            document.getElementById('itemModal').classList.remove('hidden');
+            document.getElementById('itemModal').classList.add('flex');
+        }
+
+        function closeItemModal() {
+            document.getElementById('itemModal').classList.add('hidden');
+            document.getElementById('itemModal').classList.remove('flex');
+        }
+
+        function handleFormSubmit(event) {
+            event.preventDefault();
+            const id = document.getElementById('itemId').value;
+            const category = document.querySelector('input[name="itemCategory"]:checked')?.value || 'other';
+            const title = document.getElementById('itemTitle').value.trim();
+            const url = document.getElementById('itemUrl').value.trim();
+            const username = document.getElementById('itemUsername').value.trim();
+            const password = document.getElementById('itemPassword').value.trim();
+            const notes = document.getElementById('itemNotes').value.trim();
+
+            const cardPan = document.getElementById('cardPan').value.trim();
+            const cardExpiry = document.getElementById('cardExpiry').value.trim();
+            const cardHolder = document.getElementById('cardHolder').value.trim();
+            const cardBrand = document.getElementById('cardBrand').value.trim();
+
+            if (!title || !username || !password) {
+                showToast('必須項目（名称、ID、パスワード）を入力してください', true);
+                return;
+            }
+
+            if (id) {
+                // 既存更新
+                const index = appState.items.findIndex(i => i.id === id);
+                if (index !== -1) {
+                    appState.items[index] = {
+                        ...appState.items[index],
+                        category,
+                        title,
+                        url,
+                        username,
+                        password,
+                        notes,
+                        cardPan,
+                        cardExpiry,
+                        cardHolder,
+                        cardBrand,
+                        updatedAt: Date.now()
+                    };
+                    showToast('サービス情報を更新しました');
+                }
+            } else {
+                // 新規作成
+                const newItem = {
+                    id: 'item-' + Date.now(),
+                    category,
+                    title,
+                    url,
+                    username,
+                    password,
+                    notes,
+                    cardPan,
+                    cardExpiry,
+                    cardHolder,
+                    cardBrand,
+                    createdAt: Date.now()
+                };
+                appState.items.unshift(newItem);
+                showToast('新しいサービスを登録しました');
+            }
+
+            saveData();
+            closeItemModal();
+            renderItems();
+        }
+
+        function promptDeleteItem(itemId) {
+            const item = appState.items.find(i => i.id === itemId);
+            if (!item) return;
+
+            appState.deleteTargetId = itemId;
+            document.getElementById('deleteTargetName').innerText = `「${item.title}」を削除しますか？`;
+
+            const confirmBtn = document.getElementById('confirmDeleteBtn');
+            confirmBtn.onclick = () => {
+                appState.items = appState.items.filter(i => i.id !== appState.deleteTargetId);
+                saveData();
+                closeDeleteModal();
+                renderItems();
+                showToast('サービスを削除しました');
+            };
+
+            document.getElementById('deleteModal').classList.remove('hidden');
+            document.getElementById('deleteModal').classList.add('flex');
+        }
+
+        function closeDeleteModal() {
+            document.getElementById('deleteModal').classList.add('hidden');
+            document.getElementById('deleteModal').classList.remove('flex');
+            appState.deleteTargetId = null;
+        }
+
+        function copyToClipboard(text, successMsg = 'コピーしました') {
+            if (!text) return;
+
+            // iFrame制約を考慮し、フォールバック付きでdocument.execCommandを使用
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+
+            try {
+                const successful = document.execCommand('copy');
+                if (successful) {
+                    showToast(successMsg);
+                } else {
+                    showToast('コピーできませんでした', true);
+                }
+            } catch (err) {
+                showToast('コピーに失敗しました', true);
+            } finally {
+                document.body.removeChild(textarea);
+            }
+        }
+
+        function copyFromInput(inputId) {
+            const val = document.getElementById(inputId).value;
+            copyToClipboard(val, 'パスワードをコピーしました');
+        }
+
+        function togglePasswordVisibility(inputId, buttonEl) {
+            const input = document.getElementById(inputId);
+            const icon = buttonEl.querySelector('i');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.className = 'fa-regular fa-eye-slash';
+            } else {
+                input.type = 'password';
+                icon.className = 'fa-regular fa-eye';
+            }
+        }
+
+        function toggleCardPasswordVisibility(itemId, actualPassword, buttonEl) {
+            const span = document.getElementById(`pw-text-${itemId}`);
+            const icon = buttonEl.querySelector('i');
+            const isMasked = span.getAttribute('data-masked') === 'true';
+
+            if (isMasked) {
+                span.innerText = actualPassword;
+                span.setAttribute('data-masked', 'false');
+                icon.className = 'fa-regular fa-eye-slash text-xs text-amber-400';
+            } else {
+                span.innerText = '••••••••••••';
+                span.setAttribute('data-masked', 'true');
+                icon.className = 'fa-regular fa-eye text-xs';
+            }
+        }
+
+        let toastTimeout = null;
+        function showToast(message, isError = false) {
+            const toast = document.getElementById('toast');
+            const msgEl = document.getElementById('toastMessage');
+            const iconEl = document.getElementById('toastIcon');
+
+            clearTimeout(toastTimeout);
+
+            msgEl.innerText = message;
+            if (isError) {
+                toast.className = 'fixed bottom-6 right-6 z-50 transform translate-y-0 opacity-100 transition-all duration-300 flex items-center gap-3 px-4 py-3 rounded-xl shadow-2xl text-sm font-medium border bg-rose-950/90 text-rose-200 border-rose-500/50 backdrop-blur-md';
+                iconEl.className = 'fa-solid fa-triangle-exclamation text-rose-400';
+            } else {
+                toast.className = 'fixed bottom-6 right-6 z-50 transform translate-y-0 opacity-100 transition-all duration-300 flex items-center gap-3 px-4 py-3 rounded-xl shadow-2xl text-sm font-medium border bg-slate-900/95 text-emerald-300 border-emerald-500/40 backdrop-blur-md';
+                iconEl.className = 'fa-solid fa-circle-check text-emerald-400';
+            }
+
+            toastTimeout = setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+        function exportData() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appState.items, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `keyvault_backup_${new Date().toISOString().slice(0,10)}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+            showToast('データをJSONファイルとしてエクスポートしました');
+        }
+
+        function importData(event) {
+            const file = event.target.files?.[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    if (Array.isArray(imported)) {
+                        appState.items = imported;
+                        saveData();
+                        renderItems();
+                        showToast(`${imported.length} 件のデータを復元・読み込みました`);
+                    } else {
+                        throw new Error('形式が無効です');
+                    }
+                } catch (err) {
+                    showToast('JSONファイルの形式が正しくありません', true);
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
+        // 日付フォーマットヘルパー
+        function formatDate(timestamp) {
+            if (!timestamp) return '';
+            const d = new Date(timestamp);
+            return `${d.getFullYear()}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getDate().toString().padStart(2, '0')}`;
+        }
+
+        // エスケープヘルパー
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        function escapeJs(str) {
+            if (!str) return '';
+            return String(str).replace(/'/g, "\\'").replace(/"/g, '\\"');
+        }
+    </script>
+</body>
+</html>
