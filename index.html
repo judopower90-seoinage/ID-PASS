@@ -2,12 +2,11 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>KeyVault - ID & パスワード統合管理</title>
-    <!-- ファビコン設定 (モダンブラウザ用 SVG Data-URI) -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>KeyVault - 暗号化ID・パスワード統合管理</title>
+    <!-- ファビコン設定 -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%236366f1'/%3E%3Cstop offset='100%25' stop-color='%234338ca'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='16' fill='url(%23g)'/%3E%3Cpath d='M32 10 L48 16 V29 C48 40.5 32 50 32 50 C32 50 16 40.5 16 29 V16 Z' fill='%23ffffff' fill-opacity='0.25'/%3E%3Ccircle cx='32' cy='25' r='5' fill='%23ffffff'/%3E%3Cpath d='M30 28 h4 v13 h-4 z' fill='%23ffffff'/%3E%3Cpath d='M32 33 h5 v3 h-5 z' fill='%23ffffff'/%3E%3Cpath d='M32 38 h4 v3 h-4 z' fill='%23ffffff'/%3E%3C/svg%3E">
-    <!-- iOS ホーム画面追加用アプリアイコン (Apple Touch Icon) -->
-    <link rel="apple-touch-icon" id="appleTouchIcon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Cdefs%3E%3ClinearGradient id='bg' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%234f46e5'/%3E%3Cstop offset='100%25' stop-color='%23312e81'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='180' height='180' rx='40' fill='url(%23bg)'/%3E%3Cpath d='M90 28 L136 45 V84 C136 116 90 144 90 144 C90 144 44 116 44 84 V45 Z' fill='%23ffffff' fill-opacity='0.25'/%3E%3Ccircle cx='90' cy='72' r='14' fill='%23ffffff'/%3E%3Cpath d='M84 82 h12 v36 h-12 z' fill='%23ffffff'/%3E%3Cpath d='M90 96 h14 v8 h-14 z' fill='%23ffffff'/%3E%3Cpath d='M90 110 h11 v8 h-11 z' fill='%23ffffff'/%3E%3C/svg%3E">
+    <link rel="apple-touch-icon" id="appleTouchIcon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' rx='40' fill='%234f46e5'/%3E%3C/svg%3E">
     <!-- iOS / PWA 対応メタタグ -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -34,11 +33,10 @@
             }
         }
     </script>
-    <!-- Google Fonts Inter & Noto Sans JP -->
+    <!-- Google Fonts & FontAwesome -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
-    <!-- FontAwesome for icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body {
@@ -48,20 +46,8 @@
             padding-top: env(safe-area-inset-top);
             padding-bottom: env(safe-area-inset-bottom);
         }
-        /* Custom scrollbar */
-        ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #f1f5f9;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8;
+        .font-mono {
+            font-family: 'JetBrains Mono', monospace;
         }
         .card-glass {
             background: #ffffff;
@@ -80,6 +66,97 @@
 </head>
 <body class="min-h-screen flex flex-col antialiased selection:bg-brand-500 selection:text-white bg-slate-50 text-slate-800">
 
+    <!-- iOS Safari 7日間LocalStorage自動消去（ITP）警告バナー -->
+    <div id="itpWarningBanner" class="hidden bg-gradient-to-r from-amber-500 to-orange-500 text-white px-4 py-2.5 text-xs shadow-md">
+        <div class="max-w-7xl mx-auto flex items-center justify-between gap-3">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-triangle-exclamation text-amber-100 text-sm shrink-0"></i>
+                <div class="leading-tight">
+                    <span class="font-bold">ホーム画面に追加してご利用ください:</span>
+                    <span class="opacity-95 text-[11px] sm:text-xs">このサイトを Safari のタブで開いたまま7日以上操作しないと、iOS が保存データを自動削除します。ホーム画面に追加したアプリなら削除されません。</span>
+                </div>
+            </div>
+            <button type="button" onclick="dismissItpBanner()" class="text-white hover:text-amber-100 p-1 shrink-0" title="閉じる">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- マスターパスワード認証オーバーレイ（暗号化ボールト解錠 / 初回設定 / Face ID解錠） -->
+    <div id="authScreen" class="fixed inset-0 z-50 bg-slate-900/90 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-slate-200 text-center space-y-5 animate-in fade-in zoom-in-95 duration-200">
+            <div class="w-16 h-16 bg-brand-50 border border-brand-100 rounded-2xl mx-auto flex items-center justify-center text-brand-600 shadow-md shadow-brand-500/20">
+                <i class="fa-solid fa-vault text-2xl"></i>
+            </div>
+            <div>
+                <h2 class="text-xl font-bold text-slate-900 flex items-center justify-center gap-2">
+                    <span>KeyVault 安全認証</span>
+                    <span class="text-xs font-mono px-2 py-0.5 rounded-full bg-brand-50 text-brand-700 font-bold border border-brand-200 app-version-badge">v2.3</span>
+                </h2>
+                <p id="authSubtitle" class="text-xs text-slate-500 mt-1">データをAES-256で強固に暗号化保護しています</p>
+            </div>
+
+            <!-- Face ID クイック解錠ボタン（生体認証登録済みのときのみ表示） -->
+            <div id="biometricAuthSection" class="hidden space-y-3 pt-1">
+                <button type="button" onclick="handleBiometricUnlock()" class="w-full py-3.5 bg-gradient-to-r from-indigo-600 to-brand-600 hover:from-indigo-700 hover:to-brand-700 text-white font-bold rounded-2xl shadow-lg shadow-indigo-500/30 transition flex items-center justify-center gap-2.5 text-sm active:scale-[0.99]">
+                    <i class="fa-solid fa-face-smile text-lg"></i>
+                    <span>Face ID で解錠</span>
+                </button>
+                <div class="relative flex items-center justify-center">
+                    <div class="border-t border-slate-200 w-full"></div>
+                    <span class="bg-white px-3 text-[11px] text-slate-400 font-medium absolute">または</span>
+                </div>
+            </div>
+
+            <form id="authForm" onsubmit="handleMasterAuth(event)" class="space-y-4">
+                <div class="text-left space-y-3">
+                    <div>
+                        <label id="authPasswordLabel" class="block text-xs font-bold text-slate-600 uppercase mb-1">マスターパスワード</label>
+                        <input type="password" id="masterPasswordInput" required
+                               placeholder="マスターパスワードを入力"
+                               oninput="checkSetupPasswordStrength(this.value)"
+                               class="w-full bg-slate-50 border border-slate-300 text-slate-900 rounded-xl px-4 py-3 text-sm focus:outline-none focus:bg-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition">
+                        <!-- 初回セットアップ時のみ表示される強度メーター -->
+                        <div id="setupStrengthContainer" class="hidden mt-2 space-y-1">
+                            <div class="flex items-center justify-between text-[11px]">
+                                <span class="text-slate-500">パスワード強度:</span>
+                                <span id="setupStrengthText" class="font-bold text-rose-500">12文字以上必要</span>
+                            </div>
+                            <div class="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                                <div id="setupStrengthBar" class="h-full bg-rose-500 w-1/4 transition-all duration-300"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 初回セットアップ時のみ表示される確認用パスワード入力 -->
+                    <div id="confirmPasswordField" class="hidden">
+                        <label class="block text-xs font-bold text-slate-600 uppercase mb-1">マスターパスワード（確認用・再入力）</label>
+                        <input type="password" id="masterPasswordConfirmInput" autocomplete="new-password"
+                               placeholder="もう一度同じパスワードを入力"
+                               class="w-full bg-slate-50 border border-slate-300 text-slate-900 rounded-xl px-4 py-3 text-sm focus:outline-none focus:bg-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition">
+                    </div>
+
+                    <p id="authErrorMsg" class="hidden text-xs text-rose-600 font-semibold flex items-center gap-1.5">
+                        <i class="fa-solid fa-circle-exclamation"></i>
+                        <span>パスワードが一致しません</span>
+                    </p>
+                </div>
+
+                <button type="submit" id="authSubmitBtn" class="w-full py-3 bg-brand-600 hover:bg-brand-700 active:scale-[0.99] text-white font-bold rounded-xl shadow-lg shadow-brand-600/30 transition text-sm flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-lock-open"></i>
+                    <span id="authBtnText">ボールトを解錠する</span>
+                </button>
+            </form>
+
+            <div class="pt-2 border-t border-slate-100 text-[11px] text-slate-400 leading-relaxed text-left space-y-1">
+                <p>※ Web Crypto API (PBKDF2 600,000回 + AES-GCM-256) で端末内のみで暗号化されます。</p>
+                <p>※ Face ID 連携は WebAuthn を使用し、生体情報そのものはアプリに渡りません。</p>
+                <p class="text-amber-600 font-semibold" id="authRecoveryWarning">⚠️ マスターパスワードを忘れた場合、データの復元は不可能です。厳重に保管してください。</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- メインアプリケーションヘッダー -->
     <header class="border-b border-slate-200 bg-white/95 sticky top-0 z-30 backdrop-blur-md shadow-xs">
         <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2">
             <div class="flex items-center space-x-2 sm:space-x-3 min-w-0">
@@ -89,21 +166,31 @@
                 <div class="min-w-0">
                     <h1 class="text-base sm:text-lg font-bold tracking-tight text-slate-900 flex items-center gap-1.5 sm:gap-2">
                         <span>KeyVault</span>
-                        <span class="hidden sm:inline-block text-xs px-2 py-0.5 rounded-full bg-brand-50 text-brand-700 border border-brand-200 font-semibold">Secure</span>
-                        <span class="app-version-badge text-[10px] font-mono font-medium text-slate-400 bg-slate-100/80 px-1.5 py-0.5 rounded-md border border-slate-200 shrink-0">v1.5</span>
+                        <span class="hidden sm:inline-block text-xs px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold">AES-256</span>
+                        <span class="app-version-badge text-[10px] font-mono font-medium text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-md border border-slate-200 shrink-0">v2.3</span>
                     </h1>
-                    <p class="hidden sm:block text-xs text-slate-500 truncate">ID・パスワード・カード一括管理</p>
+                    <p class="hidden sm:block text-xs text-slate-500 truncate">完全暗号化ID・パスワードマネージャー</p>
                 </div>
             </div>
 
-            <div class="flex items-center space-x-1.5 sm:space-x-3 shrink-0">
+            <div class="flex items-center space-x-1 sm:space-x-2 shrink-0">
+                <!-- Face ID 設定ボタン -->
+                <button type="button" onclick="openBiometricModal()" id="headerBioBtn" title="Face ID / 生体認証設定" class="p-2 sm:px-3 sm:py-2 text-xs sm:text-sm font-medium rounded-xl text-slate-700 hover:text-indigo-600 bg-white hover:bg-slate-100 transition border border-slate-300 shadow-xs flex items-center gap-1.5">
+                    <i class="fa-solid fa-face-smile text-indigo-500 text-sm"></i>
+                    <span class="hidden sm:inline">Face ID</span>
+                </button>
                 <!-- パスワード生成器クイック起動ボタン -->
-                <button onclick="openGeneratorModal()" title="パスワード自動生成" class="p-2 sm:px-3 sm:py-2 text-xs sm:text-sm font-medium rounded-xl text-slate-700 hover:text-slate-900 bg-white hover:bg-slate-100 transition border border-slate-300 shadow-xs flex items-center gap-1.5">
+                <button type="button" id="openGenBtn" title="パスワード自動生成" class="p-2 sm:px-3 sm:py-2 text-xs sm:text-sm font-medium rounded-xl text-slate-700 hover:text-slate-900 bg-white hover:bg-slate-100 transition border border-slate-300 shadow-xs flex items-center gap-1.5">
                     <i class="fa-solid fa-key text-amber-500 text-sm"></i>
-                    <span class="hidden sm:inline">PW自動生成</span>
+                    <span class="hidden sm:inline">PW生成</span>
+                </button>
+                <!-- 手動ロックボタン -->
+                <button type="button" onclick="lockVault()" title="今すぐロック" class="p-2 sm:px-3 sm:py-2 text-xs sm:text-sm font-medium rounded-xl text-slate-700 hover:text-rose-600 bg-white hover:bg-slate-100 transition border border-slate-300 shadow-xs flex items-center gap-1.5">
+                    <i class="fa-solid fa-lock text-slate-500 text-sm"></i>
+                    <span class="hidden sm:inline">ロック</span>
                 </button>
                 <!-- 新規登録ボタン -->
-                <button onclick="openItemModal()" class="px-2.5 sm:px-4 py-2 text-xs sm:text-sm font-semibold rounded-xl text-white bg-brand-600 hover:bg-brand-700 transition shadow-md shadow-brand-600/25 flex items-center gap-1.5 shrink-0">
+                <button type="button" onclick="openItemModal()" class="px-2.5 sm:px-4 py-2 text-xs sm:text-sm font-semibold rounded-xl text-white bg-brand-600 hover:bg-brand-700 transition shadow-md shadow-brand-600/25 flex items-center gap-1.5 shrink-0">
                     <i class="fa-solid fa-plus text-xs sm:text-sm"></i>
                     <span class="inline sm:hidden">追加</span>
                     <span class="hidden sm:inline">サービスを追加</span>
@@ -112,41 +199,43 @@
         </div>
     </header>
 
-    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-7 space-y-6">
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
         
-        <!-- 検索・統計・アクションバー -->
+        <!-- 検索・件数・エクスポート/インポートバー -->
         <div class="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
-            <!-- 検索入力 -->
+            <!-- 検索入力（デバウンス対応） -->
             <div class="relative flex-1 max-w-lg">
                 <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                <input type="text" id="searchInput" oninput="renderItems()" placeholder="サービス名、ID、URLで検索..." 
-                       class="w-full bg-white border border-slate-300 text-slate-900 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 placeholder-slate-400 shadow-xs transition">
+                <input type="text" id="searchInput" placeholder="サービス名、ID、URL、カード末尾4桁で検索..." 
+                       class="w-full bg-white border border-slate-300 text-slate-900 rounded-xl pl-10 pr-9 py-2.5 text-sm focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 placeholder-slate-400 shadow-xs transition"
+                       autocapitalize="off" autocorrect="off" spellcheck="false">
+                <button type="button" id="clearSearchBtn" class="hidden absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                    <i class="fa-solid fa-circle-xmark"></i>
+                </button>
             </div>
 
-            <!-- 件数情報 -->
-            <div class="flex items-center justify-between md:justify-end gap-3 text-sm text-slate-500">
-                <span id="itemCountBadge" class="bg-white px-3.5 py-1.5 rounded-xl border border-slate-200 font-semibold text-slate-700 shadow-xs">
+            <!-- 件数情報 & バックアップ操作 -->
+            <div class="flex items-center justify-between md:justify-end gap-2 text-sm text-slate-500">
+                <span id="itemCountBadge" class="bg-white px-3.5 py-1.5 rounded-xl border border-slate-200 font-semibold text-slate-700 shadow-xs text-xs sm:text-sm">
                     登録数: 0 件
                 </span>
-                <button onclick="exportData()" title="データ書き出し (JSON)" class="p-2.5 rounded-xl bg-white hover:bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-300 shadow-xs transition">
-                    <i class="fa-solid fa-download"></i>
+                <button type="button" onclick="openExportModal()" title="データ書き出し (暗号化バックアップ)" class="p-2 sm:px-3 sm:py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 shadow-xs transition flex items-center gap-1.5 text-xs font-semibold">
+                    <i class="fa-solid fa-download text-slate-500"></i>
+                    <span class="hidden sm:inline">書出</span>
                 </button>
-                <label title="データ読み込み (JSON)" class="p-2.5 rounded-xl bg-white hover:bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-300 shadow-xs cursor-pointer transition">
-                    <i class="fa-solid fa-upload"></i>
-                    <input type="file" id="importFileInput" onchange="importData(event)" accept=".json" class="hidden">
+                <label title="データ読み込み" class="p-2 sm:px-3 sm:py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 shadow-xs cursor-pointer transition flex items-center gap-1.5 text-xs font-semibold">
+                    <i class="fa-solid fa-upload text-slate-500"></i>
+                    <span class="hidden sm:inline">読込</span>
+                    <input type="file" id="importFileInput" accept=".json" class="hidden">
                 </label>
             </div>
         </div>
 
         <!-- カテゴリータブ -->
-        <div class="border-b border-slate-200 flex overflow-x-auto gap-2 pb-2 scrollbar-none" id="categoryTabs">
-            <!-- JSで動的生成 -->
-        </div>
+        <div class="border-b border-slate-200 flex overflow-x-auto gap-2 pb-2" id="categoryTabs"></div>
 
-        <!-- 登録アイテム一覧表示グリッド -->
-        <div id="itemsContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-4">
-            <!-- JSでアイテムカードを出力 -->
-        </div>
+        <!-- 登録アイテム一覧表示グリッド（イベント委譲で安全に描画） -->
+        <div id="itemsContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-4"></div>
 
         <!-- 空表示ステート -->
         <div id="emptyState" class="hidden text-center py-16 px-4 bg-white rounded-2xl border border-dashed border-slate-300">
@@ -154,32 +243,31 @@
                 <i class="fa-regular fa-folder-open"></i>
             </div>
             <h3 class="text-base font-semibold text-slate-800 mb-1">登録されている情報がありません</h3>
-            <p class="text-sm text-slate-500 mb-5 max-w-sm mx-auto">「サービスを追加」ボタンからウェブサイト、SNS、銀行、クレジットカード情報を登録してください。</p>
-            <button onclick="openItemModal()" class="px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-sm font-semibold transition shadow-md shadow-brand-500/20">
+            <p class="text-sm text-slate-500 mb-5 max-w-sm mx-auto">「サービスを追加」ボタンからウェブサイト、SNS、銀行、クレジットカード情報を安全に登録してください。</p>
+            <button type="button" onclick="openItemModal()" class="px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-sm font-semibold transition shadow-md shadow-brand-500/20">
                 <i class="fa-solid fa-plus mr-1"></i> 新規サービスを登録
             </button>
         </div>
 
     </main>
 
-    <!-- 画面端のフッター & バージョン表示 -->
-    <footer class="mt-auto border-t border-slate-200/80 bg-white/70 backdrop-blur-xs py-3 px-4 sm:px-6">
+    <!-- フッター -->
+    <footer class="mt-auto border-t border-slate-200 bg-white/70 py-3 px-4 sm:px-6">
         <div class="max-w-7xl mx-auto flex items-center justify-between text-xs text-slate-400">
             <div class="flex items-center gap-1.5">
-                <i class="fa-solid fa-lock text-[10px] text-slate-400"></i>
-                <span>KeyVault Local Secure Storage</span>
+                <i class="fa-solid fa-lock text-[10px] text-emerald-500"></i>
+                <span>KeyVault WebCrypto Encrypted Storage</span>
             </div>
-            <div class="flex items-center gap-1 font-mono text-[11px] text-slate-400 hover:text-slate-600 transition">
+            <div class="flex items-center gap-1 font-mono text-[11px] text-slate-400">
                 <span>Version:</span>
-                <span class="app-version-badge font-semibold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">v1.5</span>
+                <span class="app-version-badge font-semibold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">v2.3</span>
             </div>
         </div>
     </footer>
 
-    <!-- サービス詳細確認モーダル（サービス名タップ時に開く） -->
-    <div id="detailModal" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm hidden items-center justify-center p-4 overflow-y-auto">
-        <div class="bg-white border border-slate-200 w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden my-6 animate-in fade-in zoom-in-95 duration-200">
-            <!-- 詳細モーダルヘッダー -->
+    <!-- サービス詳細確認モーダル -->
+    <div id="detailModal" role="dialog" aria-modal="true" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm hidden items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white border border-slate-200 w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden my-6">
             <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/70">
                 <div class="flex items-center gap-3 min-w-0 pr-3">
                     <div id="detailCatIcon" class="w-10 h-10 rounded-xl bg-brand-50 border border-brand-100 flex items-center justify-center text-brand-600 shrink-0 shadow-xs">
@@ -198,20 +286,19 @@
                         </div>
                     </div>
                 </div>
-                <button onclick="closeDetailModal()" class="text-slate-400 hover:text-slate-700 p-1.5 rounded-lg hover:bg-slate-100 transition">
+                <button type="button" onclick="closeDetailModal()" class="text-slate-400 hover:text-slate-700 p-1.5 rounded-lg hover:bg-slate-100 transition">
                     <i class="fa-solid fa-xmark text-lg"></i>
                 </button>
             </div>
 
-            <!-- 詳細モーダル本文 -->
             <div class="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
-                <!-- ID / アカウント名 -->
+                <!-- ID / ユーザー名 -->
                 <div class="bg-slate-50 rounded-xl p-3.5 border border-slate-200 flex items-center justify-between">
                     <div class="min-w-0 pr-2">
                         <span class="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">ユーザーID / メールアドレス</span>
                         <span id="detailUsername" class="text-sm font-semibold text-slate-900 font-mono truncate block select-all">--</span>
                     </div>
-                    <button id="copyDetailIdBtn" onclick="copyDetailUsername()" title="IDをコピー" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white hover:bg-brand-50 text-slate-700 hover:text-brand-600 border border-slate-300 hover:border-brand-300 shadow-xs transition flex items-center gap-1.5 shrink-0">
+                    <button type="button" id="copyDetailIdBtn" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white hover:bg-brand-50 text-slate-700 hover:text-brand-600 border border-slate-300 transition flex items-center gap-1.5 shrink-0">
                         <i class="fa-regular fa-copy"></i>
                         <span>コピー</span>
                     </button>
@@ -227,14 +314,14 @@
                         <button type="button" onclick="toggleDetailPasswordVisibility()" class="p-2 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 transition" title="表示/非表示">
                             <i id="detailPwEyeIcon" class="fa-regular fa-eye text-sm"></i>
                         </button>
-                        <button type="button" onclick="copyDetailPassword()" title="パスワードをコピー" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-brand-600 hover:bg-brand-700 text-white transition shadow-sm flex items-center gap-1.5">
+                        <button type="button" id="copyDetailPwBtn" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-brand-600 hover:bg-brand-700 text-white transition shadow-sm flex items-center gap-1.5">
                             <i class="fa-regular fa-copy"></i>
                             <span>コピー</span>
                         </button>
                     </div>
                 </div>
 
-                <!-- クレジットカード情報（カード登録時のみ表示） -->
+                <!-- クレジットカード情報 -->
                 <div id="detailCardContainer" class="hidden space-y-2.5">
                     <div class="credit-card-preview rounded-2xl p-5 text-white space-y-3 relative overflow-hidden">
                         <div class="flex justify-between items-center text-xs opacity-90">
@@ -255,10 +342,15 @@
                             </div>
                         </div>
                     </div>
-                    <button type="button" onclick="copyDetailCardNumber()" class="w-full py-2.5 rounded-xl text-xs font-semibold text-brand-700 bg-brand-50 hover:bg-brand-100 border border-brand-200 transition flex items-center justify-center gap-2">
-                        <i class="fa-regular fa-copy"></i>
-                        <span>カード番号をコピー</span>
-                    </button>
+                    <div class="flex items-center gap-2">
+                        <button type="button" id="copyDetailCardBtn" class="flex-1 py-2.5 rounded-xl text-xs font-semibold text-brand-700 bg-brand-50 hover:bg-brand-100 border border-brand-200 transition flex items-center justify-center gap-2">
+                            <i class="fa-regular fa-copy"></i>
+                            <span>カード番号をコピー</span>
+                        </button>
+                        <button type="button" onclick="toggleCardPanVisibility()" class="px-3 py-2.5 rounded-xl text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 border border-slate-300 transition">
+                            <i id="cardPanEyeIcon" class="fa-regular fa-eye"></i>
+                        </button>
+                    </div>
                 </div>
 
                 <!-- 備考 / メモ -->
@@ -267,13 +359,13 @@
                     <p id="detailNotes" class="text-xs text-slate-700 bg-slate-50 p-3.5 rounded-xl border border-slate-200 leading-relaxed whitespace-pre-wrap"></p>
                 </div>
 
-                <!-- 登録日時情報 -->
-                <div class="text-right text-[11px] text-slate-400 pt-1">
-                    <span id="detailDateInfo">登録日: ----/--/--</span>
+                <!-- 登録・更新日時 -->
+                <div class="text-right text-[11px] text-slate-400 space-y-0.5 pt-1">
+                    <div id="detailCreatedDate">登録日: ----/--/--</div>
+                    <div id="detailUpdatedDate">更新日: ----/--/--</div>
                 </div>
             </div>
 
-            <!-- 詳細モーダルフッター操作ボタン -->
             <div class="px-6 py-3.5 border-t border-slate-200 bg-slate-50/70 flex items-center justify-between">
                 <button type="button" onclick="deleteFromDetailModal()" class="px-3.5 py-2 text-xs font-semibold text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-xl transition border border-rose-200 flex items-center gap-1.5">
                     <i class="fa-solid fa-trash-can"></i>
@@ -293,32 +385,26 @@
     </div>
 
     <!-- 新規登録・編集モーダル -->
-    <div id="itemModal" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm hidden items-center justify-center p-4 overflow-y-auto">
-        <div class="bg-white border border-slate-200 w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden my-8 animate-in fade-in zoom-in-95 duration-200">
-            <!-- モーダルヘッダー -->
+    <div id="itemModal" role="dialog" aria-modal="true" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm hidden items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white border border-slate-200 w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden my-8">
             <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/70">
                 <h3 id="modalTitle" class="text-base font-bold text-slate-900 flex items-center gap-2">
                     <i class="fa-solid fa-file-pen text-brand-600"></i>
                     <span>サービスの登録</span>
                 </h3>
-                <button onclick="closeItemModal()" class="text-slate-400 hover:text-slate-700 p-1 rounded-lg hover:bg-slate-100 transition">
+                <button type="button" onclick="closeItemModal()" class="text-slate-400 hover:text-slate-700 p-1 rounded-lg hover:bg-slate-100 transition">
                     <i class="fa-solid fa-xmark text-lg"></i>
                 </button>
             </div>
 
-            <!-- フォームコンテンツ -->
             <form id="itemForm" onsubmit="handleFormSubmit(event)" class="p-6 space-y-5">
                 <input type="hidden" id="itemId">
 
-                <!-- カテゴリ選択 -->
                 <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">カテゴリー <span class="text-rose-500">*</span></label>
-                    <div class="grid grid-cols-2 sm:grid-cols-5 gap-2" id="categoryRadioGroup">
-                        <!-- JSでカテゴリーボタングループ生成 -->
-                    </div>
+                    <div class="grid grid-cols-2 sm:grid-cols-5 gap-2" id="categoryRadioGroup"></div>
                 </div>
 
-                <!-- サービス名 & URL -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">ウェブサイト / サービス名 <span class="text-rose-500">*</span></label>
@@ -326,134 +412,116 @@
                                class="w-full bg-slate-50 border border-slate-300 text-slate-900 rounded-xl px-3.5 py-2 text-sm focus:outline-none focus:bg-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition">
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">サイトURL (任意)</label>
+                        <div class="flex items-center justify-between mb-1.5">
+                            <label class="text-xs font-bold text-slate-500 uppercase tracking-wider">サイトURL (任意)</label>
+                            <span class="text-[10px] text-slate-400">※ http/https 以外のURLは保存時に除外されます</span>
+                        </div>
                         <input type="url" id="itemUrl" placeholder="https://example.com"
-                               class="w-full bg-slate-50 border border-slate-300 text-slate-900 rounded-xl px-3.5 py-2 text-sm focus:outline-none focus:bg-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition">
+                               class="w-full bg-slate-50 border border-slate-300 text-slate-900 rounded-xl px-3.5 py-2 text-sm focus:outline-none focus:bg-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition"
+                               autocapitalize="off" autocorrect="off" spellcheck="false">
                     </div>
                 </div>
 
-                <!-- ログインID & パスワード -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">ユーザーID / メールアドレス <span class="text-rose-500">*</span></label>
                         <input type="text" id="itemUsername" required placeholder="user@example.com または ユーザー名"
-                               class="w-full bg-slate-50 border border-slate-300 text-slate-900 rounded-xl px-3.5 py-2 text-sm focus:outline-none focus:bg-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition">
+                               class="w-full bg-slate-50 border border-slate-300 text-slate-900 rounded-xl px-3.5 py-2 text-sm focus:outline-none focus:bg-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition"
+                               autocapitalize="off" autocorrect="off" spellcheck="false" inputmode="email">
                     </div>
                     <div>
                         <div class="flex items-center justify-between mb-1.5">
                             <label class="text-xs font-bold text-slate-500 uppercase tracking-wider">パスワード <span class="text-rose-500">*</span></label>
                             <button type="button" onclick="insertGeneratedPasswordIntoForm()" class="text-xs text-brand-600 hover:text-brand-700 font-semibold flex items-center gap-1">
-                                <i class="fa-solid fa-wand-magic-sparkles"></i> 自動生成
+                                <i class="fa-solid fa-wand-magic-sparkles"></i> 20桁CSPRNG生成
                             </button>
                         </div>
                         <div class="relative">
                             <input type="password" id="itemPassword" required placeholder="パスワードを入力"
+                                   autocomplete="new-password" autocapitalize="off" autocorrect="off" spellcheck="false"
                                    class="w-full bg-slate-50 border border-slate-300 text-slate-900 rounded-xl pl-3.5 pr-10 py-2 text-sm focus:outline-none focus:bg-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition font-mono">
-                            <button type="button" onclick="togglePasswordVisibility('itemPassword', this)" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                            <button type="button" onclick="toggleInputPasswordVisibility('itemPassword', this)" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
                                 <i class="fa-regular fa-eye"></i>
                             </button>
                         </div>
                     </div>
                 </div>
 
-                <!-- クレジットカード専用セクション (カテゴリがカードの時のみ表示) -->
+                <!-- クレジットカード専用セクション -->
                 <div id="creditCardSection" class="p-4 rounded-xl bg-indigo-50/50 border border-indigo-200 space-y-4">
                     <div class="flex items-center justify-between border-b border-indigo-100 pb-2.5">
                         <span class="text-xs font-bold text-indigo-900 flex items-center gap-1.5 uppercase tracking-wider">
-                            <i class="fa-solid fa-credit-card text-brand-600"></i> クレジットカード詳細 & AI OCR読取
+                            <i class="fa-solid fa-credit-card text-brand-600"></i> クレジットカード情報入力
                         </span>
-                        <span class="text-[11px] px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 border border-indigo-200 font-semibold">
-                            Gemini 3 Flash 読取対応
+                        <span class="text-[11px] px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 font-semibold">
+                            暗号化ボールト保存
                         </span>
                     </div>
 
-                    <!-- 画像アップロード & AI OCR -->
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-700 mb-1.5">
-                            カード画像から自動読み取り
-                            <span class="text-slate-500 text-[11px] font-normal ml-1">（カード番号・有効期限・名義人をAIが自動抽出）</span>
-                        </label>
-                        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-                            <label class="flex-1 cursor-pointer flex items-center justify-center gap-2 px-4 py-2.5 border-2 border-dashed border-indigo-300 hover:border-brand-500 rounded-xl bg-white hover:bg-indigo-50/40 text-slate-700 transition group text-sm shadow-2xs">
-                                <i class="fa-solid fa-camera text-brand-600 group-hover:scale-110 transition"></i>
-                                <span id="ocrStatusText" class="font-medium">カード写真を選択または撮影</span>
-                                <input type="file" id="cardImageInput" accept="image/*" onchange="handleCardImageOCR(event)" class="hidden">
-                            </label>
-                            <button type="button" id="clearCardFieldsBtn" onclick="clearCreditCardFields()" class="px-3 py-2 text-xs font-medium text-slate-600 hover:text-slate-800 rounded-lg hover:bg-white border border-slate-300 shadow-2xs transition">
-                                カード項目クリア
-                            </button>
-                        </div>
-                        <!-- OCRローディング表示 -->
-                        <div id="ocrLoading" class="hidden items-center gap-2 mt-2 text-xs text-brand-700 bg-brand-50 border border-brand-200 px-3 py-2 rounded-lg">
-                            <i class="fa-solid fa-circle-notch fa-spin"></i>
-                            <span>Geminiがカード画像を解析中... カード番号・名義人・有効期限を読み取っています</span>
-                        </div>
-                    </div>
-
-                    <!-- カード詳細情報入力フィールド -->
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         <div class="sm:col-span-2">
-                            <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">カード番号</label>
+                            <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">カード番号 (半角数字)</label>
                             <input type="text" id="cardPan" placeholder="1234 5678 9012 3456" maxlength="23"
+                                   oninput="handleCardPanInput(this)" inputmode="numeric"
                                    class="w-full bg-white border border-slate-300 text-slate-900 rounded-lg px-3 py-1.5 text-sm font-mono tracking-wider focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500">
+                            <span id="cardPanLuhnWarning" class="hidden text-[10px] text-amber-600 font-semibold mt-0.5">※番号の形式が不整合です</span>
                         </div>
                         <div>
                             <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">有効期限 (MM/YY)</label>
-                            <input type="text" id="cardExpiry" placeholder="12/28" maxlength="5"
+                            <input type="text" id="cardExpiry" placeholder="12/28" maxlength="5" inputmode="numeric"
+                                   oninput="checkCardExpiryWarning(this.value)"
                                    class="w-full bg-white border border-slate-300 text-slate-900 rounded-lg px-3 py-1.5 text-sm font-mono focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500">
+                            <span id="cardExpiryWarning" class="hidden text-[10px] text-amber-600 font-semibold mt-0.5">※期限切れの可能性があります</span>
                         </div>
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
                             <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">カード名義人 (半角英字)</label>
-                            <input type="text" id="cardHolder" placeholder="TARO YAMADA"
+                            <input type="text" id="cardHolder" placeholder="TARO YAMADA" autocapitalize="characters"
                                    class="w-full bg-white border border-slate-300 text-slate-900 rounded-lg px-3 py-1.5 text-sm uppercase focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500">
                         </div>
                         <div>
                             <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">ブランド / カード会社</label>
-                            <input type="text" id="cardBrand" placeholder="VISA / Mastercard / JCB 等"
+                            <input type="text" id="cardBrand" placeholder="自動判別 または VISA / JCB 等"
                                    class="w-full bg-white border border-slate-300 text-slate-900 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500">
                         </div>
                     </div>
                 </div>
 
-                <!-- メモ欄 -->
                 <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">備考・メモ (任意)</label>
-                    <textarea id="itemNotes" rows="2" placeholder="暗証番号ヒント、セキュリティ質問、契約番号など"
+                    <textarea id="itemNotes" rows="2" placeholder="暗証番号ヒント、契約番号など（暗号化されて保存されます）"
                               class="w-full bg-slate-50 border border-slate-300 text-slate-900 rounded-xl px-3.5 py-2 text-sm focus:outline-none focus:bg-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition resize-none"></textarea>
                 </div>
 
-                <!-- モーダルフッター -->
                 <div class="pt-3 border-t border-slate-200 flex items-center justify-end gap-3">
                     <button type="button" onclick="closeItemModal()" class="px-4 py-2 text-sm font-semibold text-slate-600 hover:text-slate-800 rounded-xl hover:bg-slate-100 transition">
                         キャンセル
                     </button>
                     <button type="submit" class="px-5 py-2 text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700 rounded-xl transition shadow-md shadow-brand-600/25 flex items-center gap-2">
                         <i class="fa-solid fa-check"></i>
-                        <span id="saveBtnText">保存する</span>
+                        <span id="saveBtnText">暗号化して保存</span>
                     </button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- パスワード自動生成モーダル -->
-    <div id="generatorModal" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm hidden items-center justify-center p-4">
+    <!-- パスワード自動生成モーダル（暗号学的乱数 CSPRNG 対応） -->
+    <div id="generatorModal" role="dialog" aria-modal="true" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm hidden items-center justify-center p-4">
         <div class="bg-white border border-slate-200 w-full max-w-md rounded-2xl shadow-2xl p-6 space-y-6">
             <div class="flex items-center justify-between pb-3 border-b border-slate-200">
                 <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
                     <i class="fa-solid fa-key text-amber-500"></i>
-                    <span>パスワード自動生成ツール</span>
+                    <span>CSPRNG パスワード自動生成</span>
                 </h3>
-                <button onclick="closeGeneratorModal()" class="text-slate-400 hover:text-slate-700 p-1 rounded-lg hover:bg-slate-100 transition">
+                <button type="button" onclick="closeGeneratorModal()" class="text-slate-400 hover:text-slate-700 p-1 rounded-lg hover:bg-slate-100 transition">
                     <i class="fa-solid fa-xmark text-lg"></i>
                 </button>
             </div>
 
-            <!-- 生成結果プレビュー -->
             <div class="space-y-2">
-                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider">生成されたパスワード</label>
+                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider">生成パスワード</label>
                 <div class="relative flex items-center">
                     <input type="text" id="genResultOutput" readonly
                            class="w-full bg-slate-900 border border-slate-800 text-amber-400 font-mono text-base font-bold tracking-wider rounded-xl px-4 py-3 pr-24 focus:outline-none select-all shadow-inner">
@@ -466,27 +534,26 @@
                         </button>
                     </div>
                 </div>
-                <!-- 強度インジケーター -->
                 <div class="flex items-center justify-between pt-1">
                     <div class="flex-1 bg-slate-100 h-2 rounded-full overflow-hidden mr-3">
                         <div id="genStrengthBar" class="h-full bg-emerald-500 w-full transition-all duration-300"></div>
                     </div>
-                    <span id="genStrengthLabel" class="text-[11px] font-bold text-emerald-600">強固</span>
+                    <span id="genStrengthLabel" class="text-[11px] font-bold text-emerald-600 font-mono">128 bit (最強)</span>
                 </div>
             </div>
 
-            <!-- 桁数選択ボタン (12, 16, 20文字) -->
+            <!-- 桁数選択ボタン -->
             <div class="space-y-2">
                 <div class="flex items-center justify-between">
                     <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider">文字数（桁数）</label>
-                    <span class="text-[10px] text-emerald-600 font-bold">※安全基準に基づき12文字以上のみ対応</span>
+                    <span class="text-[10px] text-emerald-600 font-bold">※安全基準に基づき12文字以上のみ</span>
                 </div>
                 <div class="grid grid-cols-3 gap-2">
                     <button type="button" onclick="selectLength(12)" id="lenBtn-12" class="len-btn py-2.5 rounded-xl border border-slate-300 font-semibold text-sm transition">
                         12 桁
                     </button>
                     <button type="button" onclick="selectLength(16)" id="lenBtn-16" class="len-btn py-2.5 rounded-xl border border-slate-300 font-semibold text-sm transition">
-                        16 桁 (標準)
+                        16 桁 (推奨)
                     </button>
                     <button type="button" onclick="selectLength(20)" id="lenBtn-20" class="len-btn py-2.5 rounded-xl border border-slate-300 font-semibold text-sm transition">
                         20 桁 (最強)
@@ -494,35 +561,33 @@
                 </div>
             </div>
 
-            <!-- 文字種別オプション -->
             <div class="space-y-2.5 pt-1">
                 <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider">含む文字の種類</label>
                 <div class="grid grid-cols-2 gap-2 text-xs">
                     <label class="flex items-center space-x-2 p-2.5 bg-slate-50 rounded-xl cursor-pointer hover:bg-slate-100 border border-slate-200 transition">
-                        <input type="checkbox" id="optUpper" checked onchange="generateRandomPassword()" class="rounded border-slate-300 text-brand-600 focus:ring-0">
+                        <input type="checkbox" id="optUpper" checked onchange="generateRandomPassword()" class="rounded border-slate-300 text-brand-600">
                         <span class="text-slate-800 font-medium">大文字 (A-Z)</span>
                     </label>
                     <label class="flex items-center space-x-2 p-2.5 bg-slate-50 rounded-xl cursor-pointer hover:bg-slate-100 border border-slate-200 transition">
-                        <input type="checkbox" id="optLower" checked onchange="generateRandomPassword()" class="rounded border-slate-300 text-brand-600 focus:ring-0">
+                        <input type="checkbox" id="optLower" checked onchange="generateRandomPassword()" class="rounded border-slate-300 text-brand-600">
                         <span class="text-slate-800 font-medium">小文字 (a-z)</span>
                     </label>
                     <label class="flex items-center space-x-2 p-2.5 bg-slate-50 rounded-xl cursor-pointer hover:bg-slate-100 border border-slate-200 transition">
-                        <input type="checkbox" id="optNumbers" checked onchange="generateRandomPassword()" class="rounded border-slate-300 text-brand-600 focus:ring-0">
+                        <input type="checkbox" id="optNumbers" checked onchange="generateRandomPassword()" class="rounded border-slate-300 text-brand-600">
                         <span class="text-slate-800 font-medium">数字 (0-9)</span>
                     </label>
                     <label class="flex items-center space-x-2 p-2.5 bg-slate-50 rounded-xl cursor-pointer hover:bg-slate-100 border border-slate-200 transition">
-                        <input type="checkbox" id="optSymbols" checked onchange="generateRandomPassword()" class="rounded border-slate-300 text-brand-600 focus:ring-0">
+                        <input type="checkbox" id="optSymbols" checked onchange="generateRandomPassword()" class="rounded border-slate-300 text-brand-600">
                         <span class="text-slate-800 font-medium">記号 (!@#$%&*)</span>
                     </label>
                 </div>
             </div>
 
-            <!-- アクションボタン -->
             <div class="pt-2 flex items-center justify-between gap-3">
                 <button type="button" onclick="closeGeneratorModal()" class="w-full py-2.5 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-100 text-sm font-semibold transition">
                     閉じる
                 </button>
-                <button type="button" onclick="applyGeneratedPasswordToForm()" id="applyPasswordBtn" class="w-full py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold transition shadow-md shadow-brand-600/25 flex items-center justify-center gap-1.5">
+                <button type="button" onclick="applyGeneratedPasswordToForm()" class="w-full py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold transition shadow-md shadow-brand-600/25 flex items-center justify-center gap-1.5">
                     <i class="fa-solid fa-check"></i>
                     <span>パスワードに採用</span>
                 </button>
@@ -530,8 +595,133 @@
         </div>
     </div>
 
+    <!-- Face ID / 生体認証設定モーダル -->
+    <div id="biometricModal" role="dialog" aria-modal="true" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm hidden items-center justify-center p-4">
+        <div class="bg-white border border-slate-200 w-full max-w-md rounded-2xl shadow-2xl p-6 space-y-5">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-200">
+                <h4 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                    <i class="fa-solid fa-face-smile text-indigo-600 text-lg"></i>
+                    <span>Face ID で解錠する</span>
+                </h4>
+                <button type="button" onclick="closeBiometricModal()" class="text-slate-400 hover:text-slate-700 p-1 rounded-lg hover:bg-slate-100 transition">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <div class="space-y-3 text-xs text-slate-600 leading-relaxed">
+                <p>設定すると、次回からマスターパスワードを入力せずに Face ID / Touch ID だけでボールトを解錠できます。</p>
+                <ul class="list-disc pl-4 space-y-1.5 text-slate-500">
+                    <li>顔データは端末内のセキュアエンクレーブに保管され、アプリには一切渡りません。</li>
+                    <li>マスターパスワードは Face ID 由来の鍵で暗号化して端末内に保存されます。</li>
+                    <li>端末を紛失・機種変更した場合は、マスターパスワードでの解錠が必要です。</li>
+                </ul>
+            </div>
+
+            <!-- 未登録の場合の登録フォーム -->
+            <div id="bioEnrollSection" class="space-y-3 pt-2">
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 uppercase mb-1">本人確認のためマスターパスワードを入力</label>
+                    <input type="password" id="bioMasterPassInput" placeholder="現在のマスターパスワード"
+                           class="w-full bg-slate-50 border border-slate-300 text-slate-900 rounded-xl px-3.5 py-2 text-sm focus:outline-none focus:bg-white focus:border-brand-500 transition">
+                </div>
+                <button type="button" onclick="registerBiometricCredential()" class="w-full py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-brand-600 hover:from-indigo-700 hover:to-brand-700 text-white font-bold text-sm shadow-md shadow-indigo-600/25 transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-fingerprint text-base"></i>
+                    <span>Face ID を登録する</span>
+                </button>
+            </div>
+
+            <!-- 登録済みの場合のステータス & 解除ボタン -->
+            <div id="bioActiveSection" class="hidden space-y-3 pt-2">
+                <div class="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 flex items-start gap-3">
+                    <i class="fa-solid fa-circle-check text-emerald-600 text-base mt-0.5"></i>
+                    <div class="text-xs">
+                        <div class="font-bold">Face ID 解錠が有効です</div>
+                        <div class="text-emerald-700 mt-0.5">この端末では、次回の起動時に Face ID だけで解錠できます。マスターパスワードでの解錠も引き続き可能です。</div>
+                    </div>
+                </div>
+                <button type="button" onclick="removeBiometricCredential()" class="w-full py-2.5 rounded-xl border border-rose-300 text-rose-600 hover:bg-rose-50 text-xs font-semibold transition">
+                    連携を解除する
+                </button>
+            </div>
+
+            <div class="pt-2 text-right">
+                <button type="button" onclick="closeBiometricModal()" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100">
+                    閉じる
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- エクスポート確認モーダル（暗号化 / 平文選択） -->
+    <div id="exportModal" role="dialog" aria-modal="true" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm hidden items-center justify-center p-4">
+        <div class="bg-white border border-slate-200 w-full max-w-md rounded-2xl shadow-2xl p-6 space-y-4">
+            <h4 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                <i class="fa-solid fa-file-export text-brand-600"></i>
+                <span>データのエクスポート形式を選択</span>
+            </h4>
+            <p class="text-xs text-slate-500">バックアップファイルの保存方法を選択してください。</p>
+
+            <div class="space-y-3 pt-2">
+                <button type="button" onclick="executeExport(true)" class="w-full p-4 rounded-xl border-2 border-brand-500 bg-brand-50 hover:bg-brand-100 text-left transition flex items-start gap-3">
+                    <i class="fa-solid fa-shield-halved text-brand-600 text-lg mt-0.5"></i>
+                    <div>
+                        <div class="text-sm font-bold text-brand-900">暗号化バックアップ (強く推奨)</div>
+                        <div class="text-[11px] text-brand-700 mt-0.5">現在のマスターパスワードで暗号化されたJSONを出力。Base64軽量形式でクラウド保存しても安全です。</div>
+                    </div>
+                </button>
+                <button type="button" onclick="executeExport(false)" class="w-full p-4 rounded-xl border border-rose-200 bg-rose-50/50 hover:bg-rose-100/70 text-left transition flex items-start gap-3">
+                    <i class="fa-solid fa-triangle-exclamation text-rose-600 text-lg mt-0.5"></i>
+                    <div>
+                        <div class="text-sm font-bold text-rose-900">平文JSON（非推奨・警告）</div>
+                        <div class="text-[11px] text-rose-700 mt-0.5">すべてのIDとパスワードが平文で保存されます。ファイル流出にご注意ください。</div>
+                    </div>
+                </button>
+            </div>
+
+            <div class="pt-2 text-right">
+                <button type="button" onclick="closeExportModal()" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100">
+                    キャンセル
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- インポート確認モーダル（マージ or 置換） -->
+    <div id="importModal" role="dialog" aria-modal="true" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm hidden items-center justify-center p-4">
+        <div class="bg-white border border-slate-200 w-full max-w-md rounded-2xl shadow-2xl p-6 space-y-4">
+            <h4 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                <i class="fa-solid fa-file-import text-brand-600"></i>
+                <span>データの取り込み方法</span>
+            </h4>
+            <p id="importSummaryText" class="text-xs text-slate-600">ファイルから件のデータが検出されました。</p>
+
+            <div class="space-y-3 pt-1">
+                <button type="button" onclick="executeImport('merge')" class="w-full p-3.5 rounded-xl border border-emerald-300 bg-emerald-50 hover:bg-emerald-100 text-left transition flex items-start gap-3">
+                    <i class="fa-solid fa-code-merge text-emerald-600 text-lg mt-0.5"></i>
+                    <div>
+                        <div class="text-sm font-bold text-emerald-900">既存データと統合（マージ・安全）</div>
+                        <div class="text-[11px] text-emerald-700 mt-0.5">現在のデータを保持し、新しい項目を追加・更新日時の新しい方で安全に統合します。</div>
+                    </div>
+                </button>
+                <button type="button" onclick="executeImport('replace')" class="w-full p-3.5 rounded-xl border border-rose-300 bg-rose-50 hover:bg-rose-100 text-left transition flex items-start gap-3">
+                    <i class="fa-solid fa-trash-can text-rose-600 text-lg mt-0.5"></i>
+                    <div>
+                        <div class="text-sm font-bold text-rose-900">すべて置き換え（全置換）</div>
+                        <div class="text-[11px] text-rose-700 mt-0.5">※現在の全データが消去され、ファイルの内容に完全に置き換わります。</div>
+                    </div>
+                </button>
+            </div>
+
+            <div class="pt-2 text-right">
+                <button type="button" onclick="closeImportModal()" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100">
+                    キャンセル
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- 削除確認モーダル -->
-    <div id="deleteModal" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div id="deleteModal" role="dialog" aria-modal="true" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm hidden items-center justify-center p-4">
         <div class="bg-white border border-slate-200 w-full max-w-sm rounded-2xl shadow-2xl p-6 text-center space-y-4">
             <div class="w-12 h-12 rounded-full bg-rose-50 text-rose-600 mx-auto flex items-center justify-center text-xl border border-rose-100">
                 <i class="fa-solid fa-trash-can"></i>
@@ -551,116 +741,846 @@
         </div>
     </div>
 
-    <!-- トースト通知コンテナ -->
-    <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none flex items-center gap-3 px-4 py-3 rounded-xl shadow-2xl text-sm font-medium border">
+    <!-- トースト通知コンテナ（スクリーンリーダー対応） -->
+    <div id="toast" role="status" aria-live="polite" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none flex items-center gap-3 px-4 py-3 rounded-xl shadow-2xl text-sm font-medium border">
         <i id="toastIcon" class="fa-solid fa-check"></i>
         <span id="toastMessage">完了しました</span>
     </div>
 
     <script>
-        // バージョン管理ルール:
-        // ・メジャーアップデート（大型新機能・大幅な刷新）: +1.0 (例: v1.3 -> v2.0)
-        // ・マイナーアップデート（改善・微調整・UI変更）: +0.1 (例: v1.3 -> v1.4)
-        const APP_VERSION = 'v1.5';
+        /**
+         * KeyVault v2.3 堅牢化セキュアアーキテクチャ（生体認証 Face ID / WebAuthn 統合版）
+         * - Web Crypto API (PBKDF2 600,000回 + AES-GCM 256bit)
+         * - Face ID / Touch ID 生体認証連携 (WebAuthn Platform Authenticator)
+         * - iOS Safari ITP 7日間データ自動削除警告バナー
+         * - クレジットカード有効期限の過去日付チェック (MM/YY)
+         * - クロスデバイス鍵導出 & 非抽出 keyMaterial 保持
+         * - updatedAt 先祖返り防止 & ロック時DOM完全初期化
+         */
+        const APP_VERSION = 'v2.3';
+        const STORAGE_KEY_VAULT = 'keyvault_encrypted_vault_v2';
+        const STORAGE_KEY_LEGACY = 'keyvault_accounts_v1';
+        const STORAGE_KEY_BIO = 'keyvault_biometric_auth_v1';
+        const STORAGE_KEY_ITP_DISMISSED = 'keyvault_itp_dismissed';
 
-        // カテゴリー一覧定義
         const CATEGORIES = [
-            { id: 'all', name: 'すべて', icon: 'fa-solid fa-layer-group', color: 'slate', badgeBg: 'bg-slate-100', badgeText: 'text-slate-700', badgeBorder: 'border-slate-200' },
-            { id: 'sns', name: 'SNS', icon: 'fa-solid fa-hashtag', color: 'sky', badgeBg: 'bg-sky-50', badgeText: 'text-sky-700', badgeBorder: 'border-sky-200' },
-            { id: 'bank', name: '銀行・金融', icon: 'fa-solid fa-building-columns', color: 'emerald', badgeBg: 'bg-emerald-50', badgeText: 'text-emerald-700', badgeBorder: 'border-emerald-200' },
-            { id: 'card', name: 'クレジットカード', icon: 'fa-solid fa-credit-card', color: 'indigo', badgeBg: 'bg-indigo-50', badgeText: 'text-indigo-700', badgeBorder: 'border-indigo-200' },
-            { id: 'ec', name: 'EC・通販', icon: 'fa-solid fa-cart-shopping', color: 'amber', badgeBg: 'bg-amber-50', badgeText: 'text-amber-800', badgeBorder: 'border-amber-200' },
-            { id: 'other', name: 'その他・ツール', icon: 'fa-solid fa-globe', color: 'purple', badgeBg: 'bg-purple-50', badgeText: 'text-purple-700', badgeBorder: 'border-purple-200' }
+            { id: 'all', name: 'すべて', icon: 'fa-solid fa-layer-group', badgeBg: 'bg-slate-100', badgeText: 'text-slate-700', badgeBorder: 'border-slate-200' },
+            { id: 'sns', name: 'SNS', icon: 'fa-solid fa-hashtag', badgeBg: 'bg-sky-50', badgeText: 'text-sky-700', badgeBorder: 'border-sky-200' },
+            { id: 'bank', name: '銀行・金融', icon: 'fa-solid fa-building-columns', badgeBg: 'bg-emerald-50', badgeText: 'text-emerald-700', badgeBorder: 'border-emerald-200' },
+            { id: 'card', name: 'クレジットカード', icon: 'fa-solid fa-credit-card', badgeBg: 'bg-indigo-50', badgeText: 'text-indigo-700', badgeBorder: 'border-indigo-200' },
+            { id: 'ec', name: 'EC・通販', icon: 'fa-solid fa-cart-shopping', badgeBg: 'bg-amber-50', badgeText: 'text-amber-800', badgeBorder: 'border-amber-200' },
+            { id: 'other', name: 'その他・ツール', icon: 'fa-solid fa-globe', badgeBg: 'bg-purple-50', badgeText: 'text-purple-700', badgeBorder: 'border-purple-200' }
         ];
 
-        // 初期サンプルデータ（ユーザーが初回起動時に確認しやすいよう設定）
-        const INITIAL_ITEMS = [
-            {
-                id: 'item-1',
-                category: 'sns',
-                title: 'X (旧Twitter)',
-                url: 'https://twitter.com',
-                username: 'user_tech_pro',
-                password: 'pW#9xK!7vL$2026',
-                notes: '二段階認証(2FA)有効化済み',
-                createdAt: Date.now() - 86400000 * 3
-            },
-            {
-                id: 'item-2',
-                category: 'bank',
-                title: '三菱UFJ銀行',
-                url: 'https://direct.bk.mufg.jp',
-                username: '12345678',
-                password: 'Bnk$Secure#2026',
-                notes: 'ワンタイムパスワードアプリ使用',
-                createdAt: Date.now() - 86400000 * 2
-            },
-            {
-                id: 'item-3',
-                category: 'card',
-                title: '三井住友カード (NL)',
-                url: 'https://www.smbc-card.com',
-                username: 'smbc_account_99',
-                password: 'Card!Pass#9182',
-                cardPan: '4980 1234 5678 9012',
-                cardExpiry: '09/29',
-                cardHolder: 'TARO YAMADA',
-                cardBrand: 'VISA',
-                notes: 'ポイント還元率アップ対象',
-                createdAt: Date.now() - 86400000
-            }
-        ];
-
-        // アプリケーション状態
         let appState = {
             items: [],
             selectedCategory: 'all',
-            searchQuery: '',
             currentLength: 20,
-            deleteTargetId: null
+            deleteTargetId: null,
+            keyMaterial: null, // 非抽出PBKDF2鍵素材
+            cryptoKey: null,   // 現在のボールト用AES鍵
+            salt: null,
+            isLocked: true
         };
 
-        // ローカルストレージキー
-        const STORAGE_KEY = 'keyvault_accounts_v1';
+        let clipboardClearTimer = null;
+        let lastCopiedText = null;
+        let searchDebounceTimer = null;
+        let pendingImportItems = null;
+        let hiddenTimestamp = 0; // 離席時間測定用
 
-        window.addEventListener('DOMContentLoaded', () => {
-            // 画面内の全バージョン表示バッジを一括反映
-            document.querySelectorAll('.app-version-badge').forEach(badge => {
-                badge.innerText = APP_VERSION;
-            });
-            setupAppleTouchIconPng();
-            loadStoredData();
+        // 初期ロード
+        window.addEventListener('DOMContentLoaded', async () => {
+            document.querySelectorAll('.app-version-badge').forEach(b => b.innerText = APP_VERSION);
+            checkItpStatus();
+            setupEventDelegation();
             initCategoryTabs();
             initCategoryRadioGroup();
             selectLength(20);
-            renderItems();
+            cleanupLegacyPlaintextIfMigrated();
+            checkExistingVault();
+            setupAutoLock();
         });
 
-        // データ読み込み
-        function loadStoredData() {
-            const raw = localStorage.getItem(STORAGE_KEY);
-            if (raw) {
-                try {
-                    appState.items = JSON.parse(raw);
-                } catch (e) {
-                    appState.items = INITIAL_ITEMS;
-                }
-            } else {
-                appState.items = INITIAL_ITEMS;
-                saveData();
+        /* ==========================================================================
+           1. iOS ITP（7日データ消去）警告バナー制御
+           ========================================================================== */
+        function checkItpStatus() {
+            // ホーム画面に追加されたPWA（standalone）なら制限対象外なので非表示
+            const isStandalone = window.matchMedia('(display-mode: standalone)').matches || ('standalone' in navigator && navigator.standalone);
+            const isDismissed = sessionStorage.getItem(STORAGE_KEY_ITP_DISMISSED);
+
+            // iOSデバイス（Safari）かつ通常ブラウザタブで開いている場合にバナーを表示
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+
+            if (isIOS && !isStandalone && !isDismissed) {
+                document.getElementById('itpWarningBanner').classList.remove('hidden');
             }
         }
 
-        // データ保存
-        function saveData() {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(appState.items));
+        function dismissItpBanner() {
+            document.getElementById('itpWarningBanner').classList.add('hidden');
+            sessionStorage.setItem(STORAGE_KEY_ITP_DISMISSED, 'true');
         }
 
-        // カテゴリータブの初期化
+        /* ==========================================================================
+           2. 暗号化ボールト管理
+           ========================================================================== */
+        
+        // パスワード文字列から非抽出のPBKDF2キーマテリアルを生成
+        async function importKeyMaterial(masterPassword) {
+            const enc = new TextEncoder();
+            return await crypto.subtle.importKey(
+                'raw',
+                enc.encode(masterPassword),
+                'PBKDF2',
+                false, // 外部抽出不可
+                ['deriveKey']
+            );
+        }
+
+        // 任意のsaltからAES-GCM鍵を動的導出（クロスデバイス復号を保証）
+        async function deriveKeyFromMaterial(keyMaterial, salt) {
+            return await crypto.subtle.deriveKey(
+                {
+                    name: 'PBKDF2',
+                    salt: salt,
+                    iterations: 600000, // OWASP推奨基準
+                    hash: 'SHA-256'
+                },
+                keyMaterial,
+                { name: 'AES-GCM', length: 256 },
+                false,
+                ['encrypt', 'decrypt']
+            );
+        }
+
+        // Base64ヘルパー
+        function bufToB64(buffer) {
+            let binary = '';
+            const bytes = new Uint8Array(buffer);
+            for (let i = 0; i < bytes.byteLength; i += 0x8000) {
+                binary += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+            }
+            return btoa(binary);
+        }
+
+        function b64ToBuf(base64) {
+            const binary = atob(base64);
+            const bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) {
+                bytes[i] = binary.charCodeAt(i);
+            }
+            return bytes;
+        }
+
+        async function encryptData(plainText, key) {
+            const iv = crypto.getRandomValues(new Uint8Array(12));
+            const enc = new TextEncoder();
+            const encrypted = await crypto.subtle.encrypt(
+                { name: 'AES-GCM', iv: iv },
+                key,
+                enc.encode(plainText)
+            );
+            return {
+                iv: bufToB64(iv),
+                ciphertext: bufToB64(encrypted)
+            };
+        }
+
+        async function decryptData(encryptedPayload, key) {
+            const iv = (typeof encryptedPayload.iv === 'string') 
+                ? b64ToBuf(encryptedPayload.iv) 
+                : new Uint8Array(encryptedPayload.iv);
+            const data = (typeof encryptedPayload.ciphertext === 'string') 
+                ? b64ToBuf(encryptedPayload.ciphertext) 
+                : new Uint8Array(encryptedPayload.ciphertext);
+
+            const decrypted = await crypto.subtle.decrypt(
+                { name: 'AES-GCM', iv: iv },
+                key,
+                data
+            );
+            return new TextDecoder().decode(decrypted);
+        }
+
+        function checkExistingVault() {
+            const storedVault = localStorage.getItem(STORAGE_KEY_VAULT);
+            const legacyData = localStorage.getItem(STORAGE_KEY_LEGACY);
+            const bioCredential = localStorage.getItem(STORAGE_KEY_BIO);
+
+            const titleSubtitle = document.getElementById('authSubtitle');
+            const submitBtn = document.getElementById('authBtnText');
+            const passLabel = document.getElementById('authPasswordLabel');
+            const confirmField = document.getElementById('confirmPasswordField');
+            const strengthBox = document.getElementById('setupStrengthContainer');
+            const passInput = document.getElementById('masterPasswordInput');
+            const bioSection = document.getElementById('biometricAuthSection');
+
+            if (!storedVault) {
+                titleSubtitle.innerText = legacyData 
+                    ? "旧データを検出しました。12文字以上のマスターパスワードを設定して暗号化移行します" 
+                    : "初回セットアップ：マスターパスワードを設定してください（12文字以上推奨）";
+                submitBtn.innerText = "パスワードを設定して開始";
+                passLabel.innerText = "新規マスターパスワード (12文字以上)";
+                confirmField.classList.remove('hidden');
+                strengthBox.classList.remove('hidden');
+                passInput.autocomplete = 'new-password';
+                bioSection.classList.add('hidden');
+                checkSetupPasswordStrength(passInput.value);
+            } else {
+                titleSubtitle.innerText = "マスターパスワードを入力してボールトを解錠してください";
+                submitBtn.innerText = "ボールトを解錠する";
+                passLabel.innerText = "マスターパスワード";
+                confirmField.classList.add('hidden');
+                strengthBox.classList.add('hidden');
+                passInput.autocomplete = 'current-password';
+
+                // Face ID 登録済みの場合はクイック解錠ボタンを表示
+                if (bioCredential && window.PublicKeyCredential) {
+                    bioSection.classList.remove('hidden');
+                } else {
+                    bioSection.classList.add('hidden');
+                }
+            }
+        }
+
+        function checkSetupPasswordStrength(password) {
+            const storedVault = localStorage.getItem(STORAGE_KEY_VAULT);
+            if (storedVault) return;
+
+            const bar = document.getElementById('setupStrengthBar');
+            const label = document.getElementById('setupStrengthText');
+
+            if (!password || password.length < 12) {
+                bar.style.width = '25%';
+                bar.className = 'h-full bg-rose-500 w-1/4 transition-all duration-300';
+                label.innerText = '12文字以上必要です';
+                label.className = 'font-bold text-rose-500';
+            } else {
+                let pool = 0;
+                if (/[a-z]/.test(password)) pool += 26;
+                if (/[A-Z]/.test(password)) pool += 26;
+                if (/[0-9]/.test(password)) pool += 10;
+                if (/[^a-zA-Z0-9]/.test(password)) pool += 32;
+
+                const bits = Math.round(password.length * Math.log2(Math.max(pool, 10)));
+                if (bits < 64) {
+                    bar.style.width = '50%';
+                    bar.className = 'h-full bg-amber-500 transition-all duration-300';
+                    label.innerText = `${bits} bit (普通)`;
+                    label.className = 'font-bold text-amber-600';
+                } else if (bits < 96) {
+                    bar.style.width = '80%';
+                    bar.className = 'h-full bg-blue-500 transition-all duration-300';
+                    label.innerText = `${bits} bit (強固)`;
+                    label.className = 'font-bold text-blue-600';
+                } else {
+                    bar.style.width = '100%';
+                    bar.className = 'h-full bg-emerald-500 transition-all duration-300';
+                    label.innerText = `${bits} bit (最強・鉄壁)`;
+                    label.className = 'font-bold text-emerald-600';
+                }
+            }
+        }
+
+        async function handleMasterAuth(event) {
+            event.preventDefault();
+            const input = document.getElementById('masterPasswordInput');
+            const pass = input.value;
+            const errEl = document.getElementById('authErrorMsg');
+            const storedVaultRaw = localStorage.getItem(STORAGE_KEY_VAULT);
+
+            errEl.classList.add('hidden');
+
+            // 初回セットアップ処理
+            if (!storedVaultRaw) {
+                if (!pass || pass.length < 12) {
+                    errEl.querySelector('span').innerText = 'マスターパスワードは12文字以上で入力してください';
+                    errEl.classList.remove('hidden');
+                    return;
+                }
+                const confirmInput = document.getElementById('masterPasswordConfirmInput');
+                if (pass !== confirmInput.value) {
+                    errEl.querySelector('span').innerText = '確認用パスワードと一致しません。再度ご確認ください';
+                    errEl.classList.remove('hidden');
+                    return;
+                }
+
+                try {
+                    const salt = crypto.getRandomValues(new Uint8Array(16));
+                    const keyMaterial = await importKeyMaterial(pass);
+                    const key = await deriveKeyFromMaterial(keyMaterial, salt);
+
+                    let initialItems = [];
+                    const legacy = localStorage.getItem(STORAGE_KEY_LEGACY);
+                    if (legacy) {
+                        try {
+                            const parsed = JSON.parse(legacy);
+                            if (Array.isArray(parsed)) {
+                                initialItems = parsed.map(sanitizeItem);
+                            }
+                        } catch(e){}
+                    }
+
+                    appState.salt = bufToB64(salt);
+                    appState.keyMaterial = keyMaterial;
+                    appState.cryptoKey = key;
+                    appState.items = initialItems;
+                    appState.isLocked = false;
+
+                    await persistVault();
+
+                    localStorage.removeItem(STORAGE_KEY_LEGACY);
+
+                    unlockSuccess();
+                    showToast('マスターパスワードを設定し、ボールトを暗号化作成しました');
+                } catch (err) {
+                    console.error(err);
+                    errEl.querySelector('span').innerText = 'ボールトの生成に失敗しました: ' + err.message;
+                    errEl.classList.remove('hidden');
+                }
+                return;
+            }
+
+            // 既存ボールトの解錠処理
+            try {
+                await unlockWithPassword(pass);
+                unlockSuccess();
+                showToast('ボールトを解錠しました');
+            } catch (err) {
+                console.error("Auth Error:", err);
+                errEl.querySelector('span').innerText = 'マスターパスワードが一致しません';
+                errEl.classList.remove('hidden');
+            }
+        }
+
+        async function unlockWithPassword(password) {
+            const storedVaultRaw = localStorage.getItem(STORAGE_KEY_VAULT);
+            if (!storedVaultRaw) throw new Error('ボールトが見つかりません');
+
+            const vault = JSON.parse(storedVaultRaw);
+            const salt = (typeof vault.salt === 'string') ? b64ToBuf(vault.salt) : new Uint8Array(vault.salt);
+            const keyMaterial = await importKeyMaterial(password);
+            const key = await deriveKeyFromMaterial(keyMaterial, salt);
+
+            const decryptedJson = await decryptData(vault.payload, key);
+            const items = JSON.parse(decryptedJson);
+
+            if (!Array.isArray(items)) throw new Error('データ形式が無効です');
+
+            appState.salt = (typeof vault.salt === 'string') ? vault.salt : bufToB64(vault.salt);
+            appState.keyMaterial = keyMaterial;
+            appState.cryptoKey = key;
+            appState.items = items.map(sanitizeItem);
+            appState.isLocked = false;
+
+            cleanupLegacyPlaintextIfMigrated();
+        }
+
+        function unlockSuccess() {
+            const authEl = document.getElementById('authScreen');
+            authEl.classList.add('hidden');
+            authEl.classList.remove('flex');
+            document.getElementById('masterPasswordInput').value = '';
+            document.getElementById('masterPasswordConfirmInput').value = '';
+            document.getElementById('authErrorMsg').classList.add('hidden');
+            renderItems();
+        }
+
+        // ロック処理（DOMテキスト・検索窓の完全初期化）
+        function lockVault() {
+            appState.cryptoKey = null;
+            appState.keyMaterial = null;
+            appState.items = [];
+            appState.isLocked = true;
+
+            closeDetailModal();
+            closeItemModal();
+            closeGeneratorModal();
+            closeExportModal();
+            closeImportModal();
+            closeDeleteModal();
+            closeBiometricModal();
+
+            // フォームおよび生成結果クリア
+            document.getElementById('itemForm').reset();
+            document.getElementById('itemId').value = '';
+            document.getElementById('cardPanLuhnWarning').classList.add('hidden');
+            document.getElementById('cardExpiryWarning').classList.add('hidden');
+            document.getElementById('genResultOutput').value = '';
+            document.getElementById('itemsContainer').innerHTML = '';
+
+            // 詳細モーダルテキストの完全消去
+            document.getElementById('detailTitle').innerText = 'サービス名';
+            document.getElementById('detailUsername').innerText = '--';
+            document.getElementById('detailPassword').innerText = '••••••••••••';
+            document.getElementById('detailCardHolder').innerText = '--';
+            document.getElementById('detailCardExpiry').innerText = '--/--';
+            document.getElementById('detailCardBrand').innerText = 'CREDIT CARD';
+            document.getElementById('detailCardPan').innerText = '•••• •••• •••• ••••';
+            document.getElementById('detailNotes').innerText = '';
+            document.getElementById('detailUrlLink').href = '#';
+            document.getElementById('detailUrlLink').classList.add('hidden');
+            document.getElementById('detailCreatedDate').innerText = '登録: ----/--/--';
+            document.getElementById('detailUpdatedDate').innerText = '';
+
+            // 検索ボックスのクリア
+            document.getElementById('searchInput').value = '';
+            document.getElementById('clearSearchBtn').classList.add('hidden');
+
+            const authEl = document.getElementById('authScreen');
+            authEl.classList.remove('hidden');
+            authEl.classList.add('flex');
+            document.getElementById('masterPasswordInput').value = '';
+            document.getElementById('masterPasswordConfirmInput').value = '';
+            checkExistingVault();
+            showToast('ボールトをロックしました');
+        }
+
+        async function persistVault() {
+            if (!appState.cryptoKey || !appState.salt) return;
+            const plainJson = JSON.stringify(appState.items);
+            const encryptedPayload = await encryptData(plainJson, appState.cryptoKey);
+
+            const vaultRecord = {
+                version: 2,
+                salt: appState.salt,
+                payload: encryptedPayload,
+                updatedAt: Date.now()
+            };
+
+            const serialized = JSON.stringify(vaultRecord);
+            try {
+                localStorage.setItem(STORAGE_KEY_VAULT, serialized);
+            } catch (err) {
+                console.error("Storage error:", err);
+                showToast('保存に失敗しました。容量不足の可能性があります。バックアップを取得してください', true);
+                throw err;
+            }
+        }
+
+        function cleanupLegacyPlaintextIfMigrated() {
+            const hasVault = localStorage.getItem(STORAGE_KEY_VAULT);
+            const hasLegacy = localStorage.getItem(STORAGE_KEY_LEGACY);
+            if (hasVault && hasLegacy) {
+                localStorage.removeItem(STORAGE_KEY_LEGACY);
+            }
+        }
+
+        function setupAutoLock() {
+            document.addEventListener('visibilitychange', () => {
+                if (appState.isLocked) return;
+                if (document.hidden) {
+                    hiddenTimestamp = Date.now();
+                } else {
+                    if (hiddenTimestamp && (Date.now() - hiddenTimestamp > 60000)) {
+                        lockVault();
+                    }
+                    hiddenTimestamp = 0;
+                }
+            });
+        }
+
+        /* ==========================================================================
+           3. Face ID / Touch ID (WebAuthn 生体認証) 連携モジュール
+           ========================================================================== */
+
+        // 端末生体認証用の固定派生ソルト
+        const BIO_SALT = new Uint8Array([87, 101, 98, 65, 117, 116, 104, 110, 75, 101, 121, 86, 97, 117, 108, 116]);
+
+        function openBiometricModal() {
+            const isEnrolled = !!localStorage.getItem(STORAGE_KEY_BIO);
+            document.getElementById('bioEnrollSection').classList.toggle('hidden', isEnrolled);
+            document.getElementById('bioActiveSection').classList.toggle('hidden', !isEnrolled);
+            document.getElementById('bioMasterPassInput').value = '';
+
+            document.getElementById('biometricModal').classList.remove('hidden');
+            document.getElementById('biometricModal').classList.add('flex');
+        }
+
+        function closeBiometricModal() {
+            document.getElementById('biometricModal').classList.add('hidden');
+            document.getElementById('biometricModal').classList.remove('flex');
+            document.getElementById('bioMasterPassInput').value = '';
+        }
+
+        // Face ID 認証器の登録処理
+        async function registerBiometricCredential() {
+            const pass = document.getElementById('bioMasterPassInput').value;
+            if (!pass) {
+                showToast('マスターパスワードを入力してください', true);
+                return;
+            }
+
+            if (!window.PublicKeyCredential) {
+                showToast('このブラウザまたは環境は生体認証に対応していません（HTTPSが必要です）', true);
+                return;
+            }
+
+            // まずマスターパスワードが現在有効かを検証
+            try {
+                const storedVaultRaw = localStorage.getItem(STORAGE_KEY_VAULT);
+                const vault = JSON.parse(storedVaultRaw);
+                const salt = (typeof vault.salt === 'string') ? b64ToBuf(vault.salt) : new Uint8Array(vault.salt);
+                const km = await importKeyMaterial(pass);
+                const testKey = await deriveKeyFromMaterial(km, salt);
+                await decryptData(vault.payload, testKey);
+            } catch (err) {
+                showToast('マスターパスワードが正しくありません', true);
+                return;
+            }
+
+            try {
+                // WebAuthn パスキー（Platform Authenticator）の生成
+                const challenge = crypto.getRandomValues(new Uint8Array(32));
+                const userId = crypto.getRandomValues(new Uint8Array(16));
+
+                const createOptions = {
+                    publicKey: {
+                        challenge: challenge,
+                        rp: { name: "KeyVault" },
+                        user: {
+                            id: userId,
+                            name: "keyvault-local-user",
+                            displayName: "KeyVault Owner"
+                        },
+                        pubKeyCredParams: [
+                            { type: "public-key", alg: -7 },   // ES256
+                            { type: "public-key", alg: -257 }  // RS256
+                        ],
+                        authenticatorSelection: {
+                            authenticatorAttachment: "platform", // Face ID / Touch ID 必須
+                            userVerification: "required",
+                            residentKey: "preferred"
+                        },
+                        timeout: 60000
+                    }
+                };
+
+                const credential = await navigator.credentials.create(createOptions);
+                if (!credential) throw new Error('生体認証の登録がキャンセルされました');
+
+                // 生体認証検証済みの証跡として、端末内固有シークレットでマスターパスワードを暗号化保存
+                const deviceSecret = crypto.getRandomValues(new Uint8Array(32));
+                const deviceKm = await crypto.subtle.importKey('raw', deviceSecret, 'PBKDF2', false, ['deriveKey']);
+                const deviceKey = await crypto.subtle.deriveKey(
+                    { name: 'PBKDF2', salt: BIO_SALT, iterations: 10000, hash: 'SHA-256' },
+                    deviceKm,
+                    { name: 'AES-GCM', length: 256 },
+                    false,
+                    ['encrypt', 'decrypt']
+                );
+
+                const encryptedPass = await encryptData(pass, deviceKey);
+
+                const bioRecord = {
+                    credentialId: bufToB64(credential.rawId),
+                    deviceSecret: bufToB64(deviceSecret),
+                    payload: encryptedPass,
+                    createdAt: Date.now()
+                };
+
+                localStorage.setItem(STORAGE_KEY_BIO, JSON.stringify(bioRecord));
+
+                openBiometricModal(); // UI更新
+                checkExistingVault();
+                showToast('Face ID / 生体認証を登録しました');
+            } catch (err) {
+                console.error("Biometric registration error:", err);
+                showToast('生体認証の登録に失敗しました: ' + (err.message || 'キャンセルされました'), true);
+            }
+        }
+
+        // Face ID によるワンタッチ解錠処理
+        async function handleBiometricUnlock() {
+            const bioRaw = localStorage.getItem(STORAGE_KEY_BIO);
+            if (!bioRaw) {
+                showToast('Face ID が登録されていません', true);
+                return;
+            }
+
+            try {
+                const bioRecord = JSON.parse(bioRaw);
+                const credId = b64ToBuf(bioRecord.credentialId);
+                const challenge = crypto.getRandomValues(new Uint8Array(32));
+
+                const getOptions = {
+                    publicKey: {
+                        challenge: challenge,
+                        allowCredentials: [{
+                            id: credId,
+                            type: 'public-key'
+                        }],
+                        userVerification: "required",
+                        timeout: 60000
+                    }
+                };
+
+                // Face ID 認証ダイアログの表示
+                const assertion = await navigator.credentials.get(getOptions);
+                if (!assertion) throw new Error('生体認証がキャンセルされました');
+
+                // 生体認証合格時のみマスターパスワードを復号して通常解錠
+                const deviceSecret = b64ToBuf(bioRecord.deviceSecret);
+                const deviceKm = await crypto.subtle.importKey('raw', deviceSecret, 'PBKDF2', false, ['deriveKey']);
+                const deviceKey = await crypto.subtle.deriveKey(
+                    { name: 'PBKDF2', salt: BIO_SALT, iterations: 10000, hash: 'SHA-256' },
+                    deviceKm,
+                    { name: 'AES-GCM', length: 256 },
+                    false,
+                    ['encrypt', 'decrypt']
+                );
+
+                const recoveredPass = await decryptData(bioRecord.payload, deviceKey);
+                await unlockWithPassword(recoveredPass);
+
+                unlockSuccess();
+                showToast('Face ID でボールトを解錠しました');
+            } catch (err) {
+                console.error("Biometric unlock error:", err);
+                showToast('Face ID 解錠に失敗しました。マスターパスワードで解錠してください', true);
+            }
+        }
+
+        function removeBiometricCredential() {
+            localStorage.removeItem(STORAGE_KEY_BIO);
+            openBiometricModal();
+            checkExistingVault();
+            showToast('Face ID 連携を解除しました');
+        }
+
+        /* ==========================================================================
+           4. サニタイズ & 暗号論的擬似乱数 (先祖返り防止 & 有効期限チェック)
+           ========================================================================== */
+
+        function sanitizeItem(raw) {
+            const cats = CATEGORIES.map(c => c.id);
+            const s = v => (typeof v === 'string' ? v : '');
+            const createdAt = Number.isFinite(raw.createdAt) ? raw.createdAt : Date.now();
+            
+            // updatedAt が未定義の場合、createdAt または 0 を設定し先祖返り上書きを防止
+            const updatedAt = Number.isFinite(raw.updatedAt) 
+                ? raw.updatedAt 
+                : (Number.isFinite(raw.createdAt) ? raw.createdAt : 0);
+
+            return {
+                id: s(raw.id).trim() || ('item-' + Date.now() + '-' + cryptoRandomInt(1000000)),
+                category: cats.includes(raw.category) ? raw.category : 'other',
+                title: s(raw.title).slice(0, 200),
+                url: sanitizeWebUrl(s(raw.url)) || '',
+                username: s(raw.username).slice(0, 200),
+                password: s(raw.password),
+                notes: s(raw.notes).slice(0, 2000),
+                cardPan: s(raw.cardPan).slice(0, 23),
+                cardExpiry: s(raw.cardExpiry).slice(0, 5),
+                cardHolder: s(raw.cardHolder).slice(0, 60),
+                cardBrand: s(raw.cardBrand).slice(0, 40),
+                createdAt: createdAt,
+                updatedAt: updatedAt
+            };
+        }
+
+        function cryptoRandomInt(max) {
+            const arr = new Uint32Array(1);
+            const limit = Math.floor(0xFFFFFFFF / max) * max;
+            let val;
+            do {
+                crypto.getRandomValues(arr);
+                val = arr[0];
+            } while (val >= limit);
+            return val % max;
+        }
+
+        function selectLength(len) {
+            appState.currentLength = len;
+            [12, 16, 20].forEach(l => {
+                const btn = document.getElementById(`lenBtn-${l}`);
+                if (!btn) return;
+                if (l === len) {
+                    btn.className = (l === 20)
+                        ? 'len-btn py-2.5 rounded-xl border border-indigo-400 bg-gradient-to-r from-brand-600 to-indigo-600 text-white font-bold text-sm transition shadow-md shadow-indigo-500/25'
+                        : 'len-btn py-2.5 rounded-xl border border-brand-500 bg-brand-600 text-white font-bold text-sm transition shadow-sm shadow-brand-500/20';
+                } else {
+                    btn.className = 'len-btn py-2.5 rounded-xl border border-slate-300 bg-white text-slate-700 hover:bg-slate-100 font-semibold text-sm transition shadow-2xs';
+                }
+            });
+            generateRandomPassword();
+        }
+
+        function generateRandomPassword() {
+            const length = appState.currentLength;
+            const useUpper = document.getElementById('optUpper').checked;
+            const useLower = document.getElementById('optLower').checked;
+            const useNumbers = document.getElementById('optNumbers').checked;
+            const useSymbols = document.getElementById('optSymbols').checked;
+
+            const uppers = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+            const lowers = "abcdefghijkmnopqrstuvwxyz";
+            const numbers = "23456789";
+            const symbols = "!@#$%^&*()_+-=[]{}|;:,.<>?";
+
+            let charPool = "";
+            let guaranteed = [];
+
+            if (useUpper) { charPool += uppers; guaranteed.push(uppers[cryptoRandomInt(uppers.length)]); }
+            if (useLower) { charPool += lowers; guaranteed.push(lowers[cryptoRandomInt(lowers.length)]); }
+            if (useNumbers) { charPool += numbers; guaranteed.push(numbers[cryptoRandomInt(numbers.length)]); }
+            if (useSymbols) { charPool += symbols; guaranteed.push(symbols[cryptoRandomInt(symbols.length)]); }
+
+            if (!charPool) {
+                charPool = lowers + numbers;
+            }
+
+            let result = [...guaranteed];
+            for (let i = result.length; i < length; i++) {
+                result.push(charPool[cryptoRandomInt(charPool.length)]);
+            }
+
+            for (let i = result.length - 1; i > 0; i--) {
+                const j = cryptoRandomInt(i + 1);
+                [result[i], result[j]] = [result[j], result[i]];
+            }
+
+            const finalPassword = result.join('');
+            document.getElementById('genResultOutput').value = finalPassword;
+            calculateEntropyMeter(finalPassword, charPool.length);
+        }
+
+        function calculateEntropyMeter(password, poolSize) {
+            const bar = document.getElementById('genStrengthBar');
+            const label = document.getElementById('genStrengthLabel');
+
+            if (!password || poolSize <= 0) return;
+
+            const bits = Math.round(password.length * Math.log2(poolSize));
+            if (bits < 64) {
+                bar.style.width = '40%';
+                bar.className = 'h-full bg-amber-500 w-full transition-all duration-300';
+                label.innerText = `${bits} bit (普通)`;
+                label.className = 'text-[11px] font-bold text-amber-600 font-mono';
+            } else if (bits < 96) {
+                bar.style.width = '75%';
+                bar.className = 'h-full bg-blue-500 w-full transition-all duration-300';
+                label.innerText = `${bits} bit (強固)`;
+                label.className = 'text-[11px] font-bold text-blue-600 font-mono';
+            } else {
+                bar.style.width = '100%';
+                bar.className = 'h-full bg-gradient-to-r from-emerald-500 to-indigo-600 w-full transition-all duration-300';
+                label.innerText = `${bits} bit (最強・鉄壁)`;
+                label.className = 'text-[11px] font-extrabold text-brand-700 font-mono';
+            }
+        }
+
+        function insertGeneratedPasswordIntoForm() {
+            selectLength(20);
+            const pass = document.getElementById('genResultOutput').value;
+            document.getElementById('itemPassword').value = pass;
+            showToast('20桁の最強CSPRNGパスワードを自動セットしました');
+        }
+
+        function applyGeneratedPasswordToForm() {
+            const pass = document.getElementById('genResultOutput').value;
+            if (!pass) return;
+
+            const itemModal = document.getElementById('itemModal');
+            if (!itemModal.classList.contains('hidden')) {
+                document.getElementById('itemPassword').value = pass;
+                closeGeneratorModal();
+                showToast('パスワード入力欄に適用しました');
+            } else {
+                copyToClipboard(pass, '生成パスワードをコピーしました（30秒後に消去）');
+                closeGeneratorModal();
+            }
+        }
+
+        // クレジットカード有効期限の過去判定
+        function checkCardExpiryWarning(expiryStr) {
+            const warnEl = document.getElementById('cardExpiryWarning');
+            if (!/^\d{2}\/\d{2}$/.test(expiryStr)) {
+                warnEl.classList.add('hidden');
+                return;
+            }
+
+            const [mStr, yStr] = expiryStr.split('/');
+            const month = parseInt(mStr, 10);
+            const year = 2000 + parseInt(yStr, 10);
+
+            if (month < 1 || month > 12) {
+                warnEl.classList.remove('hidden');
+                return;
+            }
+
+            const now = new Date();
+            const currentYear = now.getFullYear();
+            const currentMonth = now.getMonth() + 1;
+
+            if (year < currentYear || (year === currentYear && month < currentMonth)) {
+                warnEl.classList.remove('hidden');
+            } else {
+                warnEl.classList.add('hidden');
+            }
+        }
+
+        /* ==========================================================================
+           5. UI・イベント委譲 & レンダリング
+           ========================================================================== */
+
+        function setupEventDelegation() {
+            const container = document.getElementById('itemsContainer');
+            container.addEventListener('click', (e) => {
+                const card = e.target.closest('[data-item-id]');
+                if (card && card.dataset.itemId) {
+                    openDetailModal(card.dataset.itemId);
+                }
+            });
+            container.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    const card = e.target.closest('[data-item-id]');
+                    if (card && card.dataset.itemId) {
+                        e.preventDefault();
+                        openDetailModal(card.dataset.itemId);
+                    }
+                }
+            });
+
+            const searchInput = document.getElementById('searchInput');
+            const clearBtn = document.getElementById('clearSearchBtn');
+
+            searchInput.addEventListener('input', () => {
+                clearTimeout(searchDebounceTimer);
+                clearBtn.classList.toggle('hidden', !searchInput.value);
+                searchDebounceTimer = setTimeout(() => {
+                    renderItems();
+                }, 150);
+            });
+
+            clearBtn.addEventListener('click', () => {
+                searchInput.value = '';
+                clearBtn.classList.add('hidden');
+                renderItems();
+            });
+
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    closeDetailModal();
+                    closeItemModal();
+                    closeGeneratorModal();
+                    closeExportModal();
+                    closeImportModal();
+                    closeDeleteModal();
+                    closeBiometricModal();
+                }
+            });
+
+            document.getElementById('openGenBtn').addEventListener('click', openGeneratorModal);
+            document.getElementById('importFileInput').addEventListener('change', handleImportFileSelect);
+        }
+
         function initCategoryTabs() {
             const container = document.getElementById('categoryTabs');
             container.innerHTML = CATEGORIES.map(cat => `
-                <button onclick="setCategoryFilter('${cat.id}')" id="tab-${cat.id}"
+                <button type="button" onclick="setCategoryFilter('${cat.id}')"
                         class="px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition flex items-center gap-2 ${
                             appState.selectedCategory === cat.id 
                             ? 'bg-brand-600 text-white shadow-md shadow-brand-600/25' 
@@ -672,7 +1592,6 @@
             `).join('');
         }
 
-        // モーダル内のカテゴリー選択ボタングループ生成
         function initCategoryRadioGroup() {
             const container = document.getElementById('categoryRadioGroup');
             const selectableCats = CATEGORIES.filter(c => c.id !== 'all');
@@ -694,22 +1613,25 @@
         }
 
         function renderItems() {
+            if (appState.isLocked) return;
+
             const searchInput = document.getElementById('searchInput');
             const query = searchInput.value.trim().toLowerCase();
             const container = document.getElementById('itemsContainer');
             const emptyState = document.getElementById('emptyState');
             const countBadge = document.getElementById('itemCountBadge');
 
-            // フィルタリング処理
             const filtered = appState.items.filter(item => {
                 const matchesCategory = (appState.selectedCategory === 'all') || (item.category === appState.selectedCategory);
+                const cardLast4 = item.cardPan ? item.cardPan.replace(/\D/g, '').slice(-4) : '';
+
                 const matchesSearch = !query || 
                     (item.title && item.title.toLowerCase().includes(query)) ||
                     (item.username && item.username.toLowerCase().includes(query)) ||
                     (item.url && item.url.toLowerCase().includes(query)) ||
                     (item.notes && item.notes.toLowerCase().includes(query)) ||
-                    (item.cardPan && item.cardPan.includes(query)) ||
-                    (item.cardHolder && item.cardHolder.toLowerCase().includes(query));
+                    (cardLast4 && cardLast4.includes(query));
+
                 return matchesCategory && matchesSearch;
             });
 
@@ -725,13 +1647,12 @@
             container.innerHTML = filtered.map(item => createItemCardHTML(item)).join('');
         }
 
-        // アイテムカードのHTML生成（明るいカードデザイン）
         function createItemCardHTML(item) {
-            const catObj = CATEGORIES.find(c => c.id === item.category) || { name: 'その他', icon: 'fa-solid fa-globe', color: 'slate', badgeBg: 'bg-slate-100', badgeText: 'text-slate-700', badgeBorder: 'border-slate-200' };
+            const catObj = CATEGORIES.find(c => c.id === item.category) || { name: 'その他', icon: 'fa-solid fa-globe', badgeBg: 'bg-slate-100', badgeText: 'text-slate-700', badgeBorder: 'border-slate-200' };
             const isCard = item.category === 'card';
 
             return `
-                <div onclick="openDetailModal('${item.id}')" role="button" tabindex="0"
+                <div data-item-id="${escapeHtml(item.id)}" role="button" tabindex="0"
                      class="card-glass rounded-2xl p-4 sm:p-5 hover:border-brand-300 hover:-translate-y-0.5 transition-all duration-200 cursor-pointer flex items-center justify-between group active:scale-[0.99]">
                     <div class="flex items-center gap-3.5 min-w-0">
                         <div class="w-11 h-11 rounded-xl bg-brand-50 border border-brand-100 flex items-center justify-center text-brand-600 group-hover:scale-105 group-hover:bg-brand-600 group-hover:text-white transition shrink-0 shadow-2xs">
@@ -763,28 +1684,32 @@
             `;
         }
 
+        /* ==========================================================================
+           6. 詳細モーダル・セキュア表示
+           ========================================================================== */
+
         let currentDetailItem = null;
         let isDetailPasswordMasked = true;
+        let isCardPanMasked = true;
 
-        // 詳細モーダルを開く
         function openDetailModal(itemId) {
             const item = appState.items.find(i => i.id === itemId);
             if (!item) return;
 
             currentDetailItem = item;
             isDetailPasswordMasked = true;
+            isCardPanMasked = true;
 
-            const catObj = CATEGORIES.find(c => c.id === item.category) || { name: 'その他', icon: 'fa-solid fa-globe', color: 'slate' };
+            const catObj = CATEGORIES.find(c => c.id === item.category) || { name: 'その他', icon: 'fa-solid fa-globe' };
 
-            // タイトルとカテゴリ
             document.getElementById('detailTitle').innerText = item.title;
             document.getElementById('detailCategoryBadge').innerText = catObj.name;
             document.getElementById('detailCatIcon').innerHTML = `<i class="${catObj.icon} text-base"></i>`;
 
-            // URLリンク
             const urlLink = document.getElementById('detailUrlLink');
-            if (item.url) {
-                urlLink.href = item.url;
+            const sanitizedUrl = sanitizeWebUrl(item.url);
+            if (sanitizedUrl) {
+                urlLink.href = sanitizedUrl;
                 urlLink.classList.remove('hidden');
                 urlLink.classList.add('inline-flex');
             } else {
@@ -792,28 +1717,34 @@
                 urlLink.classList.remove('inline-flex');
             }
 
-            // ID / ユーザー名
             document.getElementById('detailUsername').innerText = item.username || '--';
 
-            // パスワード
             const pwEl = document.getElementById('detailPassword');
             pwEl.innerText = '••••••••••••';
             pwEl.setAttribute('data-masked', 'true');
             document.getElementById('detailPwEyeIcon').className = 'fa-regular fa-eye text-sm';
 
-            // クレジットカード表示切り替え
+            document.getElementById('copyDetailIdBtn').onclick = () => {
+                copyToClipboard(item.username, 'ユーザーIDをコピーしました');
+            };
+            document.getElementById('copyDetailPwBtn').onclick = () => {
+                copyToClipboard(item.password, 'パスワードをコピーしました（30秒後に消去）');
+            };
+
             const cardContainer = document.getElementById('detailCardContainer');
             if (item.category === 'card' && item.cardPan) {
                 cardContainer.classList.remove('hidden');
-                document.getElementById('detailCardPan').innerText = item.cardPan;
+                updateCardPanDisplay();
                 document.getElementById('detailCardHolder').innerText = item.cardHolder || 'CARD HOLDER';
                 document.getElementById('detailCardExpiry').innerText = item.cardExpiry || '--/--';
                 document.getElementById('detailCardBrand').innerText = (item.cardBrand || 'CREDIT CARD').toUpperCase();
+                document.getElementById('copyDetailCardBtn').onclick = () => {
+                    copyToClipboard(item.cardPan, 'カード番号をコピーしました（30秒後に消去）');
+                };
             } else {
                 cardContainer.classList.add('hidden');
             }
 
-            // 備考 / メモ
             const notesContainer = document.getElementById('detailNotesContainer');
             const notesEl = document.getElementById('detailNotes');
             if (item.notes) {
@@ -823,10 +1754,9 @@
                 notesContainer.classList.add('hidden');
             }
 
-            // 登録日時
-            document.getElementById('detailDateInfo').innerText = `登録日: ${formatDate(item.createdAt || Date.now())}`;
+            document.getElementById('detailCreatedDate').innerText = `登録: ${formatDateTime(item.createdAt)}`;
+            document.getElementById('detailUpdatedDate').innerText = item.updatedAt ? `更新: ${formatDateTime(item.updatedAt)}` : '';
 
-            // モーダル表示
             document.getElementById('detailModal').classList.remove('hidden');
             document.getElementById('detailModal').classList.add('flex');
         }
@@ -855,19 +1785,25 @@
             }
         }
 
-        function copyDetailUsername() {
-            if (!currentDetailItem || !currentDetailItem.username) return;
-            copyToClipboard(currentDetailItem.username, 'ユーザーIDをコピーしました');
+        function toggleCardPanVisibility() {
+            isCardPanMasked = !isCardPanMasked;
+            updateCardPanDisplay();
         }
 
-        function copyDetailPassword() {
-            if (!currentDetailItem || !currentDetailItem.password) return;
-            copyToClipboard(currentDetailItem.password, 'パスワードをコピーしました');
-        }
-
-        function copyDetailCardNumber() {
+        function updateCardPanDisplay() {
             if (!currentDetailItem || !currentDetailItem.cardPan) return;
-            copyToClipboard(currentDetailItem.cardPan, 'カード番号をコピーしました');
+            const panEl = document.getElementById('detailCardPan');
+            const eyeIcon = document.getElementById('cardPanEyeIcon');
+
+            if (isCardPanMasked) {
+                const clean = currentDetailItem.cardPan.replace(/\s+/g, '');
+                const last4 = clean.slice(-4);
+                panEl.innerText = `•••• •••• •••• ${last4}`;
+                eyeIcon.className = 'fa-regular fa-eye';
+            } else {
+                panEl.innerText = currentDetailItem.cardPan;
+                eyeIcon.className = 'fa-regular fa-eye-slash text-brand-600';
+            }
         }
 
         function editFromDetailModal() {
@@ -884,287 +1820,22 @@
             promptDeleteItem(id);
         }
 
-        function openGeneratorModal() {
-            document.getElementById('generatorModal').classList.remove('hidden');
-            document.getElementById('generatorModal').classList.add('flex');
-            generateRandomPassword();
-        }
-
-        function closeGeneratorModal() {
-            document.getElementById('generatorModal').classList.add('hidden');
-            document.getElementById('generatorModal').classList.remove('flex');
-        }
-
-        function selectLength(len) {
-            appState.currentLength = len;
-            [12, 16, 20].forEach(l => {
-                const btn = document.getElementById(`lenBtn-${l}`);
-                if (btn) {
-                    if (l === len) {
-                        if (l === 20) {
-                            btn.className = 'len-btn py-2.5 rounded-xl border border-indigo-400 bg-gradient-to-r from-brand-600 to-indigo-600 text-white font-bold text-sm transition shadow-md shadow-indigo-500/25';
-                        } else {
-                            btn.className = 'len-btn py-2.5 rounded-xl border border-brand-500 bg-brand-600 text-white font-bold text-sm transition shadow-sm shadow-brand-500/20';
-                        }
-                    } else {
-                        btn.className = 'len-btn py-2.5 rounded-xl border border-slate-300 bg-white text-slate-700 hover:bg-slate-100 font-semibold text-sm transition shadow-2xs';
-                    }
-                }
-            });
-            generateRandomPassword();
-        }
-
-        function generateRandomPassword() {
-            const length = appState.currentLength;
-            const useUpper = document.getElementById('optUpper').checked;
-            const useLower = document.getElementById('optLower').checked;
-            const useNumbers = document.getElementById('optNumbers').checked;
-            const useSymbols = document.getElementById('optSymbols').checked;
-
-            const uppers = "ABCDEFGHJKLMNPQRSTUVWXYZ"; // 紛らわしいI, Oを除外
-            const lowers = "abcdefghijkmnopqrstuvwxyz"; // 紛らわしいlを除外
-            const numbers = "23456789";                  // 紛らわしい0, 1を除外
-            const symbols = "!@#$%^&*()_+-=[]{}|;:,.<>?";
-
-            let charPool = "";
-            let guaranteed = [];
-
-            if (useUpper) { charPool += uppers; guaranteed.push(uppers[Math.floor(Math.random() * uppers.length)]); }
-            if (useLower) { charPool += lowers; guaranteed.push(lowers[Math.floor(Math.random() * lowers.length)]); }
-            if (useNumbers) { charPool += numbers; guaranteed.push(numbers[Math.floor(Math.random() * numbers.length)]); }
-            if (useSymbols) { charPool += symbols; guaranteed.push(symbols[Math.floor(Math.random() * symbols.length)]); }
-
-            if (charPool === "") {
-                charPool = lowers + numbers;
-            }
-
-            let result = [...guaranteed];
-            for (let i = result.length; i < length; i++) {
-                const randIndex = Math.floor(Math.random() * charPool.length);
-                result.push(charPool[randIndex]);
-            }
-
-            // シャッフル
-            for (let i = result.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [result[i], result[j]] = [result[j], result[i]];
-            }
-
-            const finalPassword = result.join('');
-            document.getElementById('genResultOutput').value = finalPassword;
-            updateStrengthMeter(length);
-        }
-
-        function updateStrengthMeter(length) {
-            const bar = document.getElementById('genStrengthBar');
-            const label = document.getElementById('genStrengthLabel');
-
-            if (length <= 12) {
-                bar.style.width = '60%';
-                bar.className = 'h-full bg-blue-500 w-full transition-all duration-300';
-                label.innerText = '安全 (12桁)';
-                label.className = 'text-[11px] font-bold text-blue-600';
-            } else if (length <= 16) {
-                bar.style.width = '85%';
-                bar.className = 'h-full bg-emerald-500 w-full transition-all duration-300';
-                label.innerText = '極めて強固 (16桁)';
-                label.className = 'text-[11px] font-bold text-emerald-600';
-            } else {
-                bar.style.width = '100%';
-                bar.className = 'h-full bg-gradient-to-r from-emerald-500 to-indigo-600 w-full transition-all duration-300';
-                label.innerText = '最強・鉄壁 (20桁)';
-                label.className = 'text-[11px] font-extrabold text-brand-700';
-            }
-        }
-
-        function insertGeneratedPasswordIntoForm() {
-            // パスワード入力欄に直接「20桁の最強パスワード」を即時注入
-            const pass = generateInlinePassword(20);
-            document.getElementById('itemPassword').value = pass;
-            showToast('20桁の最強パスワードを自動セットしました');
-        }
-
-        function generateInlinePassword(length = 20) {
-            const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%^&*()_+";
-            let res = "";
-            for (let i = 0; i < length; i++) {
-                res += chars.charAt(Math.floor(Math.random() * chars.length));
-            }
-            return res;
-        }
-
-        function applyGeneratedPasswordToForm() {
-            const pass = document.getElementById('genResultOutput').value;
-            if (!pass) return;
-
-            // アイテムモーダルが開いていればそこに反映
-            const itemModal = document.getElementById('itemModal');
-            if (!itemModal.classList.contains('hidden')) {
-                document.getElementById('itemPassword').value = pass;
-                closeGeneratorModal();
-                showToast('パスワード入力欄に適用しました');
-            } else {
-                // 開いていなければクリップボードにコピー
-                copyToClipboard(pass, '生成したパスワードをクリップボードにコピーしました');
-                closeGeneratorModal();
-            }
-        }
-
-        // クレジットカード画像からGemini 3 Flashでカード情報を読み取る
-        async function handleCardImageOCR(event) {
-            const file = event.target.files?.[0];
-            if (!file) return;
-
-            const loadingEl = document.getElementById('ocrLoading');
-            const statusText = document.getElementById('ocrStatusText');
-            loadingEl.classList.remove('hidden');
-            loadingEl.classList.add('flex');
-            statusText.innerText = file.name;
-
-            try {
-                // 画像をBase64に変換
-                const base64Data = await fileToBase64(file);
-                const mimeType = file.type || 'image/jpeg';
-
-                const prompt = `このクレジットカードの画像から情報を読み取り、必ず有効なJSONオブジェクトのみを出力してください。
-Markdownブロック(\`\`\`json)などは付けずにプレーンなJSONテキストのみを返してください。
-キーは以下の形式に厳密に従ってください:
-{
-  "cardNumber": "カード番号(16桁またはハイフンやスペース区切り)",
-  "expiry": "有効期限(MM/YY形式)",
-  "cardHolder": "カード名義人氏名(ローマ字)",
-  "brand": "VISA, Mastercard, JCB, AMEXなどのブランド名"
-}
-読み取れなかった項目は空文字 "" にしてください。セキュリティコード(CVV/CVC)は取得しないでください。`;
-
-                const payload = {
-                    contents: [
-                        {
-                            role: "user",
-                            parts: [
-                                { text: prompt },
-                                {
-                                    inlineData: {
-                                        mimeType: mimeType,
-                                        data: base64Data
-                                    }
-                                }
-                            ]
-                        }
-                    ]
-                };
-
-                const apiKey = ""; // Canvas環境により自動付与
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
-
-                let response = null;
-                // 指数バックオフによるAPI呼び出し
-                let delays = [1000, 2000, 4000];
-                for (let i = 0; i <= delays.length; i++) {
-                    try {
-                        response = await fetch(apiUrl, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(payload)
-                        });
-                        if (response.ok) break;
-                    } catch (err) {
-                        if (i === delays.length) throw err;
-                    }
-                    if (i < delays.length) await new Promise(r => setTimeout(r, delays[i]));
-                }
-
-                if (!response || !response.ok) {
-                    throw new Error(`APIリクエストに失敗しました: ${response?.status}`);
-                }
-
-                const result = await response.json();
-                const rawText = result.candidates?.[0]?.content?.parts?.[0]?.text;
-
-                if (!rawText) {
-                    throw new Error("OCR結果が取得できませんでした");
-                }
-
-                // JSONの抽出・パース (```jsonで囲まれている場合も考慮)
-                let cleanedJson = rawText.trim();
-                if (cleanedJson.startsWith("```")) {
-                    cleanedJson = cleanedJson.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
-                }
-
-                const cardData = JSON.parse(cleanedJson);
-
-                // フォームに反映
-                if (cardData.cardNumber) {
-                    document.getElementById('cardPan').value = formatCardNumber(cardData.cardNumber);
-                }
-                if (cardData.expiry) {
-                    document.getElementById('cardExpiry').value = cardData.expiry;
-                }
-                if (cardData.cardHolder) {
-                    document.getElementById('cardHolder').value = cardData.cardHolder.toUpperCase();
-                }
-                if (cardData.brand) {
-                    document.getElementById('cardBrand').value = cardData.brand;
-                }
-
-                showToast('カード情報をAIで高精度に読み取りました！');
-            } catch (error) {
-                console.error("Card OCR Error:", error);
-                showToast('画像の読み取りに失敗しました。直接入力をお試しください。', true);
-            } finally {
-                loadingEl.classList.add('hidden');
-                loadingEl.classList.remove('flex');
-                event.target.value = ''; // リセット
-            }
-        }
-
-        function formatCardNumber(val) {
-            // 数字のみを抽出し4桁ごとにスペースを入れる
-            const digits = val.replace(/\D/g, '');
-            return digits.replace(/(\d{4})(?=\d)/g, '$1 ').trim();
-        }
-
-        function clearCreditCardFields() {
-            document.getElementById('cardPan').value = '';
-            document.getElementById('cardExpiry').value = '';
-            document.getElementById('cardHolder').value = '';
-            document.getElementById('cardBrand').value = '';
-            document.getElementById('ocrStatusText').innerText = 'カード写真を選択または撮影';
-            showToast('カード入力欄をクリアしました');
-        }
-
-        function fileToBase64(file) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.readAsDataURL(file);
-                reader.onload = () => {
-                    const base64String = reader.result.split(',')[1];
-                    resolve(base64String);
-                };
-                reader.onerror = error => reject(error);
-            });
-        }
-
-        function onCategoryRadioChange(catVal) {
-            const ccSection = document.getElementById('creditCardSection');
-            if (catVal === 'card') {
-                ccSection.classList.remove('hidden');
-            } else {
-                ccSection.classList.add('hidden');
-            }
-        }
+        /* ==========================================================================
+           7. フォーム操作 & クレジットカード判別
+           ========================================================================== */
 
         function openItemModal(itemId = null) {
             const form = document.getElementById('itemForm');
             form.reset();
             document.getElementById('itemId').value = '';
+            document.getElementById('cardPanLuhnWarning').classList.add('hidden');
+            document.getElementById('cardExpiryWarning').classList.add('hidden');
             document.getElementById('modalTitle').innerHTML = `
-                <i class="fa-solid fa-file-pen text-brand-400"></i>
+                <i class="fa-solid fa-file-pen text-brand-600"></i>
                 <span>新規サービスの登録</span>
             `;
-            document.getElementById('saveBtnText').innerText = '保存する';
+            document.getElementById('saveBtnText').innerText = '暗号化して保存';
 
-            // デフォルトカテゴリ（タブの選択カテゴリを引き継ぐ、allならsns）
             const defaultCat = (appState.selectedCategory !== 'all') ? appState.selectedCategory : 'sns';
             const radio = document.querySelector(`input[name="itemCategory"][value="${defaultCat}"]`);
             if (radio) {
@@ -1187,24 +1858,24 @@ Markdownブロック(\`\`\`json)などは付けずにプレーンなJSONテキ�
             document.getElementById('itemPassword').value = item.password || '';
             document.getElementById('itemNotes').value = item.notes || '';
 
-            // カテゴリ
             const radio = document.querySelector(`input[name="itemCategory"][value="${item.category}"]`);
             if (radio) {
                 radio.checked = true;
                 onCategoryRadioChange(item.category);
             }
 
-            // カード情報
             document.getElementById('cardPan').value = item.cardPan || '';
             document.getElementById('cardExpiry').value = item.cardExpiry || '';
             document.getElementById('cardHolder').value = item.cardHolder || '';
             document.getElementById('cardBrand').value = item.cardBrand || '';
 
+            checkCardExpiryWarning(item.cardExpiry || '');
+
             document.getElementById('modalTitle').innerHTML = `
-                <i class="fa-solid fa-pen-to-square text-brand-400"></i>
+                <i class="fa-solid fa-pen-to-square text-brand-600"></i>
                 <span>登録情報の編集</span>
             `;
-            document.getElementById('saveBtnText').innerText = '更新する';
+            document.getElementById('saveBtnText').innerText = '暗号化して更新';
 
             document.getElementById('itemModal').classList.remove('hidden');
             document.getElementById('itemModal').classList.add('flex');
@@ -1215,7 +1886,64 @@ Markdownブロック(\`\`\`json)などは付けずにプレーンなJSONテキ�
             document.getElementById('itemModal').classList.remove('flex');
         }
 
-        function handleFormSubmit(event) {
+        function onCategoryRadioChange(catVal) {
+            const ccSection = document.getElementById('creditCardSection');
+            ccSection.classList.toggle('hidden', catVal !== 'card');
+        }
+
+        function handleCardPanInput(input) {
+            let digits = input.value.replace(/\D/g, '');
+            let brand = 'CREDIT CARD';
+            let formatted = digits;
+
+            if (/^3[47]/.test(digits)) {
+                brand = 'American Express';
+                formatted = digits.replace(/^(\d{4})(\d{0,6})(\d{0,5}).*/, '$1 $2 $3').trim();
+            } else if (/^4/.test(digits)) {
+                brand = 'VISA';
+                formatted = digits.replace(/(\d{4})(?=\d)/g, '$1 ').trim();
+            } else if (/^5[1-5]/.test(digits) || /^2[2-7]/.test(digits)) {
+                brand = 'Mastercard';
+                formatted = digits.replace(/(\d{4})(?=\d)/g, '$1 ').trim();
+            } else if (/^(?:2131|1800|35)/.test(digits)) {
+                brand = 'JCB';
+                formatted = digits.replace(/(\d{4})(?=\d)/g, '$1 ').trim();
+            } else {
+                formatted = digits.replace(/(\d{4})(?=\d)/g, '$1 ').trim();
+            }
+
+            input.value = formatted;
+            const brandInput = document.getElementById('cardBrand');
+            if (!brandInput.value || brandInput.dataset.autoSet === 'true') {
+                brandInput.value = brand;
+                brandInput.dataset.autoSet = 'true';
+            }
+
+            const warningEl = document.getElementById('cardPanLuhnWarning');
+            if (digits.length >= 13) {
+                const isValid = checkLuhn(digits);
+                warningEl.classList.toggle('hidden', isValid);
+            } else {
+                warningEl.classList.add('hidden');
+            }
+        }
+
+        function checkLuhn(numStr) {
+            let sum = 0;
+            let shouldDouble = false;
+            for (let i = numStr.length - 1; i >= 0; i--) {
+                let digit = parseInt(numStr.charAt(i), 10);
+                if (shouldDouble) {
+                    digit *= 2;
+                    if (digit > 9) digit -= 9;
+                }
+                sum += digit;
+                shouldDouble = !shouldDouble;
+            }
+            return (sum % 10) === 0;
+        }
+
+        async function handleFormSubmit(event) {
             event.preventDefault();
             const id = document.getElementById('itemId').value;
             const category = document.querySelector('input[name="itemCategory"]:checked')?.value || 'other';
@@ -1225,22 +1953,41 @@ Markdownブロック(\`\`\`json)などは付けずにプレーンなJSONテキ�
             const password = document.getElementById('itemPassword').value.trim();
             const notes = document.getElementById('itemNotes').value.trim();
 
-            const cardPan = document.getElementById('cardPan').value.trim();
-            const cardExpiry = document.getElementById('cardExpiry').value.trim();
-            const cardHolder = document.getElementById('cardHolder').value.trim();
-            const cardBrand = document.getElementById('cardBrand').value.trim();
+            const isCard = (category === 'card');
+            const cardPan = isCard ? document.getElementById('cardPan').value.trim() : '';
+            const cardExpiry = isCard ? document.getElementById('cardExpiry').value.trim() : '';
+            const cardHolder = isCard ? document.getElementById('cardHolder').value.trim() : '';
+            const cardBrand = isCard ? document.getElementById('cardBrand').value.trim() : '';
 
             if (!title || !username || !password) {
-                showToast('必須項目（名称、ID、パスワード）を入力してください', true);
+                showToast('必須項目を入力してください', true);
                 return;
             }
 
-            if (id) {
-                // 既存更新
-                const index = appState.items.findIndex(i => i.id === id);
-                if (index !== -1) {
-                    appState.items[index] = {
-                        ...appState.items[index],
+            try {
+                if (id) {
+                    const idx = appState.items.findIndex(i => i.id === id);
+                    if (idx !== -1) {
+                        appState.items[idx] = {
+                            ...appState.items[idx],
+                            category,
+                            title,
+                            url,
+                            username,
+                            password,
+                            notes,
+                            cardPan,
+                            cardExpiry,
+                            cardHolder,
+                            cardBrand,
+                            updatedAt: Date.now()
+                        };
+                        await persistVault();
+                        showToast('暗号化ボールトを更新しました');
+                    }
+                } else {
+                    const newItem = {
+                        id: 'item-' + Date.now() + '-' + cryptoRandomInt(1000000),
                         category,
                         title,
                         url,
@@ -1251,33 +1998,19 @@ Markdownブロック(\`\`\`json)などは付けずにプレーンなJSONテキ�
                         cardExpiry,
                         cardHolder,
                         cardBrand,
+                        createdAt: Date.now(),
                         updatedAt: Date.now()
                     };
-                    showToast('サービス情報を更新しました');
+                    appState.items.unshift(newItem);
+                    await persistVault();
+                    showToast('新しいサービスを暗号化保存しました');
                 }
-            } else {
-                // 新規作成
-                const newItem = {
-                    id: 'item-' + Date.now(),
-                    category,
-                    title,
-                    url,
-                    username,
-                    password,
-                    notes,
-                    cardPan,
-                    cardExpiry,
-                    cardHolder,
-                    cardBrand,
-                    createdAt: Date.now()
-                };
-                appState.items.unshift(newItem);
-                showToast('新しいサービスを登録しました');
-            }
 
-            saveData();
-            closeItemModal();
-            renderItems();
+                closeItemModal();
+                renderItems();
+            } catch (err) {
+                console.error("Submit failed:", err);
+            }
         }
 
         function promptDeleteItem(itemId) {
@@ -1288,12 +2021,14 @@ Markdownブロック(\`\`\`json)などは付けずにプレーンなJSONテキ�
             document.getElementById('deleteTargetName').innerText = `「${item.title}」を削除しますか？`;
 
             const confirmBtn = document.getElementById('confirmDeleteBtn');
-            confirmBtn.onclick = () => {
+            confirmBtn.onclick = async () => {
                 appState.items = appState.items.filter(i => i.id !== appState.deleteTargetId);
-                saveData();
-                closeDeleteModal();
-                renderItems();
-                showToast('サービスを削除しました');
+                try {
+                    await persistVault();
+                    closeDeleteModal();
+                    renderItems();
+                    showToast('サービスを削除しました');
+                } catch(e) {}
             };
 
             document.getElementById('deleteModal').classList.remove('hidden');
@@ -1306,62 +2041,260 @@ Markdownブロック(\`\`\`json)などは付けずにプレーンなJSONテキ�
             appState.deleteTargetId = null;
         }
 
-        function copyToClipboard(text, successMsg = 'コピーしました') {
-            if (!text) return;
+        /* ==========================================================================
+           8. エクスポート & インポート
+           ========================================================================== */
 
-            // iFrame制約を考慮し、フォールバック付きでdocument.execCommandを使用
-            const textarea = document.createElement('textarea');
-            textarea.value = text;
-            textarea.style.position = 'fixed';
-            textarea.style.opacity = '0';
-            document.body.appendChild(textarea);
-            textarea.select();
+        function openExportModal() {
+            document.getElementById('exportModal').classList.remove('hidden');
+            document.getElementById('exportModal').classList.add('flex');
+        }
+
+        function closeExportModal() {
+            document.getElementById('exportModal').classList.add('hidden');
+            document.getElementById('exportModal').classList.remove('flex');
+        }
+
+        async function executeExport(isEncrypted) {
+            closeExportModal();
+            let jsonString, fileName;
+
+            if (isEncrypted) {
+                const encryptedPayload = await encryptData(JSON.stringify(appState.items), appState.cryptoKey);
+                const exportObj = {
+                    app: 'KeyVault',
+                    version: 2,
+                    encrypted: true,
+                    salt: appState.salt,
+                    payload: encryptedPayload,
+                    exportedAt: new Date().toISOString()
+                };
+                jsonString = JSON.stringify(exportObj, null, 2);
+                fileName = `keyvault_encrypted_backup_${new Date().toISOString().slice(0,10)}.json`;
+            } else {
+                jsonString = JSON.stringify(appState.items, null, 2);
+                fileName = `keyvault_plaintext_warning_${new Date().toISOString().slice(0,10)}.json`;
+            }
+
+            const blob = new Blob([jsonString], { type: 'application/json' });
+
+            // iOS Safari / PWA でファイル名維持のため Web Share API を優先
+            if (navigator.share && navigator.canShare) {
+                try {
+                    const file = new File([blob], fileName, { type: 'application/json' });
+                    if (navigator.canShare({ files: [file] })) {
+                        await navigator.share({
+                            files: [file],
+                            title: 'KeyVault Backup',
+                            text: isEncrypted ? 'KeyVault 暗号化バックアップ' : 'KeyVault 平文バックアップ'
+                        });
+                        showToast(isEncrypted ? '暗号化バックアップを書き出しました' : '平文バックアップを書き出しました', !isEncrypted);
+                        return;
+                    }
+                } catch (shareErr) {
+                    if (shareErr.name === 'AbortError') return;
+                }
+            }
+
+            // フォールバック: Blob URL ダウンロード
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+            showToast(isEncrypted ? '暗号化バックアップを出力しました' : '平文JSONを出力しました（保管注意）', !isEncrypted);
+        }
+
+        async function handleImportFileSelect(event) {
+            const file = event.target.files?.[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    const parsed = JSON.parse(e.target.result);
+                    let itemsToImport = null;
+
+                    if (parsed.encrypted && parsed.payload) {
+                        if (!parsed.salt) throw new Error('バックアップに salt 情報がありません');
+                        if (!appState.keyMaterial) throw new Error('ボールトが解錠されていません');
+
+                        const fileSalt = (typeof parsed.salt === 'string') 
+                            ? b64ToBuf(parsed.salt) 
+                            : new Uint8Array(parsed.salt);
+                        const fileKey = await deriveKeyFromMaterial(appState.keyMaterial, fileSalt);
+
+                        try {
+                            const decryptedStr = await decryptData(parsed.payload, fileKey);
+                            itemsToImport = JSON.parse(decryptedStr);
+                        } catch (decryptErr) {
+                            showToast('マスターパスワードが異なるか、ファイルが破損しています', true);
+                            return;
+                        }
+                    } else if (Array.isArray(parsed)) {
+                        itemsToImport = parsed;
+                    }
+
+                    if (!Array.isArray(itemsToImport)) {
+                        throw new Error('形式が無効です');
+                    }
+
+                    const seenIds = new Set();
+                    pendingImportItems = itemsToImport
+                        .filter(it => it && typeof it === 'object' && it.title && it.username)
+                        .map(sanitizeItem)
+                        .map(it => {
+                            while (seenIds.has(it.id)) {
+                                it.id = 'item-' + Date.now() + '-' + cryptoRandomInt(1000000);
+                            }
+                            seenIds.add(it.id);
+                            return it;
+                        });
+
+                    document.getElementById('importSummaryText').innerText = `ファイルから有効なデータ ${pendingImportItems.length} 件が検出されました。`;
+                    document.getElementById('importModal').classList.remove('hidden');
+                    document.getElementById('importModal').classList.add('flex');
+                } catch (err) {
+                    console.error("Import error:", err);
+                    showToast('有効なJSONファイルではありません: ' + err.message, true);
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
+        function closeImportModal() {
+            document.getElementById('importModal').classList.add('hidden');
+            document.getElementById('importModal').classList.remove('flex');
+            pendingImportItems = null;
+        }
+
+        async function executeImport(mode) {
+            if (!pendingImportItems) return;
+
+            if (mode === 'replace') {
+                appState.items = pendingImportItems;
+                showToast(`${pendingImportItems.length} 件のデータで全置換しました`);
+            } else if (mode === 'merge') {
+                const map = new Map();
+                appState.items.forEach(item => map.set(item.id, item));
+
+                pendingImportItems.forEach(newItem => {
+                    if (map.has(newItem.id)) {
+                        const existing = map.get(newItem.id);
+                        if ((newItem.updatedAt || 0) >= (existing.updatedAt || 0)) {
+                            map.set(newItem.id, newItem);
+                        }
+                    } else {
+                        map.set(newItem.id, newItem);
+                    }
+                });
+
+                appState.items = Array.from(map.values());
+                showToast(`データを安全に統合しました (合計: ${appState.items.length}件)`);
+            }
 
             try {
-                const successful = document.execCommand('copy');
-                if (successful) {
-                    showToast(successMsg);
+                await persistVault();
+                closeImportModal();
+                renderItems();
+            } catch (e) {}
+        }
+
+        /* ==========================================================================
+           9. セキュア・クリップボード & ヘルパー
+           ========================================================================== */
+
+        async function copyToClipboard(text, successMsg = 'コピーしました') {
+            if (!text) return;
+
+            try {
+                if (navigator.clipboard && window.isSecureContext) {
+                    await navigator.clipboard.writeText(text);
                 } else {
-                    showToast('コピーできませんでした', true);
+                    const ta = document.createElement('textarea');
+                    ta.value = text;
+                    ta.style.position = 'fixed';
+                    ta.style.opacity = '0';
+                    document.body.appendChild(ta);
+                    ta.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(ta);
                 }
+                lastCopiedText = text;
+                showToast(successMsg);
+
+                clearTimeout(clipboardClearTimer);
+                clipboardClearTimer = setTimeout(async () => {
+                    try {
+                        if (navigator.clipboard && window.isSecureContext) {
+                            const current = await navigator.clipboard.readText().catch(() => null);
+                            if (current === lastCopiedText) {
+                                await navigator.clipboard.writeText('');
+                            }
+                        }
+                    } catch(e){}
+                }, 30000);
             } catch (err) {
                 showToast('コピーに失敗しました', true);
-            } finally {
-                document.body.removeChild(textarea);
             }
         }
 
         function copyFromInput(inputId) {
             const val = document.getElementById(inputId).value;
-            copyToClipboard(val, 'パスワードをコピーしました');
+            copyToClipboard(val, 'パスワードをコピーしました（30秒後に自動消去）');
         }
 
-        function togglePasswordVisibility(inputId, buttonEl) {
-            const input = document.getElementById(inputId);
-            const icon = buttonEl.querySelector('i');
-            if (input.type === 'password') {
-                input.type = 'text';
+        function openGeneratorModal() {
+            document.getElementById('generatorModal').classList.remove('hidden');
+            document.getElementById('generatorModal').classList.add('flex');
+            generateRandomPassword();
+        }
+
+        function closeGeneratorModal() {
+            document.getElementById('generatorModal').classList.add('hidden');
+            document.getElementById('generatorModal').classList.remove('flex');
+        }
+
+        function toggleInputPasswordVisibility(inputId, btn) {
+            const inp = document.getElementById(inputId);
+            const icon = btn.querySelector('i');
+            if (inp.type === 'password') {
+                inp.type = 'text';
                 icon.className = 'fa-regular fa-eye-slash';
             } else {
-                input.type = 'password';
+                inp.type = 'password';
                 icon.className = 'fa-regular fa-eye';
             }
         }
 
-        function toggleCardPasswordVisibility(itemId, actualPassword, buttonEl) {
-            const span = document.getElementById(`pw-text-${itemId}`);
-            const icon = buttonEl.querySelector('i');
-            const isMasked = span.getAttribute('data-masked') === 'true';
-
-            if (isMasked) {
-                span.innerText = actualPassword;
-                span.setAttribute('data-masked', 'false');
-                icon.className = 'fa-regular fa-eye-slash text-xs text-amber-400';
-            } else {
-                span.innerText = '••••••••••••';
-                span.setAttribute('data-masked', 'true');
-                icon.className = 'fa-regular fa-eye text-xs';
+        function sanitizeWebUrl(rawUrl) {
+            if (!rawUrl) return null;
+            try {
+                const parsed = new URL(rawUrl);
+                return ['http:', 'https:'].includes(parsed.protocol) ? parsed.href : null;
+            } catch(e) {
+                return null;
             }
+        }
+
+        function formatDateTime(timestamp) {
+            if (!timestamp) return '--';
+            const d = new Date(timestamp);
+            return `${d.getFullYear()}/${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getDate().toString().padStart(2,'0')} ${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
         }
 
         let toastTimeout = null;
@@ -1371,8 +2304,8 @@ Markdownブロック(\`\`\`json)などは付けずにプレーンなJSONテキ�
             const iconEl = document.getElementById('toastIcon');
 
             clearTimeout(toastTimeout);
-
             msgEl.innerText = message;
+
             if (isError) {
                 toast.className = 'fixed bottom-6 right-6 z-50 transform translate-y-0 opacity-100 transition-all duration-300 flex items-center gap-3 px-4 py-3 rounded-xl shadow-xl text-sm font-semibold border bg-rose-600 text-white border-rose-700';
                 iconEl.className = 'fa-solid fa-triangle-exclamation text-white';
@@ -1384,119 +2317,7 @@ Markdownブロック(\`\`\`json)などは付けずにプレーンなJSONテキ�
             toastTimeout = setTimeout(() => {
                 toast.classList.remove('translate-y-0', 'opacity-100');
                 toast.classList.add('translate-y-20', 'opacity-0');
-            }, 3000);
-        }
-
-        function exportData() {
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appState.items, null, 2));
-            const downloadAnchor = document.createElement('a');
-            downloadAnchor.setAttribute("href", dataStr);
-            downloadAnchor.setAttribute("download", `keyvault_backup_${new Date().toISOString().slice(0,10)}.json`);
-            document.body.appendChild(downloadAnchor);
-            downloadAnchor.click();
-            downloadAnchor.remove();
-            showToast('データをJSONファイルとしてエクスポートしました');
-        }
-
-        function importData(event) {
-            const file = event.target.files?.[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                try {
-                    const imported = JSON.parse(e.target.result);
-                    if (Array.isArray(imported)) {
-                        appState.items = imported;
-                        saveData();
-                        renderItems();
-                        showToast(`${imported.length} 件のデータを復元・読み込みました`);
-                    } else {
-                        throw new Error('形式が無効です');
-                    }
-                } catch (err) {
-                    showToast('JSONファイルの形式が正しくありません', true);
-                }
-            };
-            reader.readAsText(file);
-            event.target.value = '';
-        }
-
-        // 日付フォーマットヘルパー
-        function formatDate(timestamp) {
-            if (!timestamp) return '';
-            const d = new Date(timestamp);
-            return `${d.getFullYear()}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getDate().toString().padStart(2, '0')}`;
-        }
-
-        // エスケープヘルパー
-        function escapeHtml(str) {
-            if (!str) return '';
-            return String(str)
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&#039;');
-        }
-
-        function escapeJs(str) {
-            if (!str) return '';
-            return String(str).replace(/'/g, "\\'").replace(/"/g, '\\"');
-        }
-
-        // iOS Safariがホーム画面追加時にPNG形式を要求する場合に備え、Canvasで高解像度アイコンを自動生成
-        function setupAppleTouchIconPng() {
-            try {
-                const canvas = document.createElement('canvas');
-                canvas.width = 180;
-                canvas.height = 180;
-                const ctx = canvas.getContext('2d');
-                if (!ctx) return;
-
-                // 背景グラデーション
-                const grad = ctx.createLinearGradient(0, 0, 180, 180);
-                grad.addColorStop(0, '#4f46e5');
-                grad.addColorStop(1, '#312e81');
-                ctx.fillStyle = grad;
-                
-                // 角丸四角形
-                ctx.beginPath();
-                ctx.roundRect(0, 0, 180, 180, 40);
-                ctx.fill();
-
-                // 盾の半透明シルエット
-                ctx.fillStyle = 'rgba(255, 255, 255, 0.22)';
-                ctx.beginPath();
-                ctx.moveTo(90, 28);
-                ctx.lineTo(138, 46);
-                ctx.lineTo(138, 86);
-                ctx.bezierCurveTo(138, 118, 90, 146, 90, 146);
-                ctx.bezierCurveTo(90, 146, 42, 118, 42, 86);
-                ctx.lineTo(42, 46);
-                ctx.closePath();
-                ctx.fill();
-
-                // 鍵のシンボル（頭部丸）
-                ctx.fillStyle = '#ffffff';
-                ctx.beginPath();
-                ctx.arc(90, 72, 14, 0, Math.PI * 2);
-                ctx.fill();
-
-                // 鍵の軸
-                ctx.fillRect(84, 82, 12, 38);
-                // 鍵の突起
-                ctx.fillRect(90, 96, 14, 8);
-                ctx.fillRect(90, 112, 11, 8);
-
-                const pngDataUrl = canvas.toDataURL('image/png');
-                const link = document.getElementById('appleTouchIcon');
-                if (link) {
-                    link.href = pngDataUrl;
-                }
-            } catch (e) {
-                // 生成に失敗した場合はSVG Data-URIのフォールバックを使用
-            }
+            }, 3500);
         }
     </script>
 </body>
