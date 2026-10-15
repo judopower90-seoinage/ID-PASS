@@ -91,7 +91,7 @@
             <div>
                 <h2 class="text-xl font-bold text-slate-900 flex items-center justify-center gap-2">
                     <span>KeyVault 安全認証</span>
-                    <span class="text-xs font-mono px-2 py-0.5 rounded-full bg-brand-50 text-brand-700 font-bold border border-brand-200 app-version-badge">v2.4</span>
+                    <span class="text-xs font-mono px-2 py-0.5 rounded-full bg-brand-50 text-brand-700 font-bold border border-brand-200 app-version-badge">v2.5</span>
                 </h2>
                 <p id="authSubtitle" class="text-xs text-slate-500 mt-1">データをAES-256で強固に暗号化保護しています</p>
             </div>
@@ -167,7 +167,7 @@
                     <h1 class="text-base sm:text-lg font-bold tracking-tight text-slate-900 flex items-center gap-1.5 sm:gap-2">
                         <span>KeyVault</span>
                         <span class="hidden sm:inline-block text-xs px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold">AES-256</span>
-                        <span class="app-version-badge text-[10px] font-mono font-medium text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-md border border-slate-200 shrink-0">v2.4</span>
+                        <span class="app-version-badge text-[10px] font-mono font-medium text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-md border border-slate-200 shrink-0">v2.5</span>
                     </h1>
                     <p class="hidden sm:block text-xs text-slate-500 truncate">完全暗号化ID・パスワードマネージャー</p>
                 </div>
@@ -260,7 +260,7 @@
             </div>
             <div class="flex items-center gap-1 font-mono text-[11px] text-slate-400">
                 <span>Version:</span>
-                <span class="app-version-badge font-semibold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">v2.4</span>
+                <span class="app-version-badge font-semibold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">v2.5</span>
             </div>
         </div>
     </footer>
@@ -384,7 +384,7 @@
         </div>
     </div>
 
-    <!-- 新規登録・編集モーダル -->
+    <!-- 新規登録・編集モーダル（v2.5: フォーム内CSPRNG生成オプション拡張） -->
     <div id="itemModal" role="dialog" aria-modal="true" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm hidden items-center justify-center p-4 overflow-y-auto">
         <div class="bg-white border border-slate-200 w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden my-8">
             <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/70">
@@ -430,7 +430,7 @@
                                autocapitalize="off" autocorrect="off" spellcheck="false" inputmode="email">
                     </div>
                     <div>
-                        <!-- パスワード保護ロック＆生成バー -->
+                        <!-- パスワード保護ロック＆解除バー -->
                         <div class="flex items-center justify-between mb-1.5">
                             <label class="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
                                 <span>パスワード</span>
@@ -445,20 +445,77 @@
                                 <button type="button" id="formUnlockPwBtn" onclick="requestFormPasswordUnlock()" class="hidden text-xs text-amber-600 hover:text-amber-700 font-bold flex items-center gap-1">
                                     <i class="fa-solid fa-lock-open"></i> 変更（解除）
                                 </button>
-                                <!-- 生成ボタン（ロック時は非活性） -->
-                                <button type="button" id="formGeneratePwBtn" onclick="insertGeneratedPasswordIntoForm()" class="text-xs text-brand-600 hover:text-brand-700 font-semibold flex items-center gap-1">
-                                    <i class="fa-solid fa-wand-magic-sparkles"></i> 20桁CSPRNG生成
+                                <!-- パスワード保護ロックボタン（ロック解除時のみ表示） -->
+                                <button type="button" id="formLockPwBtn" onclick="applyFormPasswordLock()" class="text-xs text-slate-600 hover:text-slate-900 font-semibold flex items-center gap-1">
+                                    <i class="fa-solid fa-lock text-[10px]"></i> パスワードを保護
                                 </button>
                             </div>
                         </div>
+
                         <div class="relative">
-                            <input type="password" id="itemPassword" required placeholder="パスワードを入力"
+                            <input type="password" id="itemPassword" required placeholder="パスワードを入力または下部から生成"
                                    autocomplete="new-password" autocapitalize="off" autocorrect="off" spellcheck="false"
                                    class="w-full bg-slate-50 border border-slate-300 text-slate-900 rounded-xl pl-3.5 pr-10 py-2 text-sm focus:outline-none focus:bg-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition font-mono">
                             <button type="button" onclick="toggleInputPasswordVisibility('itemPassword', this)" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
                                 <i class="fa-regular fa-eye"></i>
                             </button>
                         </div>
+
+                        <!-- v2.5 新機能: サービス登録・編集フォーム内のCSPRNGパスワード生成ツールパネル -->
+                        <div id="formGenPanel" class="mt-2.5 p-3 rounded-xl bg-slate-50/90 border border-slate-200 space-y-2.5 transition-all">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                                    <i class="fa-solid fa-wand-magic-sparkles text-brand-600"></i>
+                                    <span>CSPRNG パスワード自動生成</span>
+                                </span>
+                                <button type="button" id="formGenRegenBtn" onclick="generatePasswordForForm()" class="text-xs font-bold text-brand-600 hover:text-brand-700 flex items-center gap-1 transition">
+                                    <i class="fa-solid fa-arrows-rotate text-[11px]"></i> 新規生成
+                                </button>
+                            </div>
+
+                            <!-- 桁数選択ボタン群 (12桁 / 16桁 / 20桁) -->
+                            <div>
+                                <div class="flex items-center justify-between mb-1">
+                                    <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">文字数（桁数）</span>
+                                    <span id="formGenEntropyText" class="text-[10px] font-bold text-emerald-600 font-mono">20桁 (128 bit 最強)</span>
+                                </div>
+                                <div class="grid grid-cols-3 gap-1.5">
+                                    <button type="button" onclick="selectFormGenLength(12)" id="formLenBtn-12" class="form-len-btn py-1.5 px-2 rounded-lg border border-slate-300 bg-white text-slate-700 font-semibold text-xs hover:bg-slate-100 transition shadow-2xs">
+                                        12 桁
+                                    </button>
+                                    <button type="button" onclick="selectFormGenLength(16)" id="formLenBtn-16" class="form-len-btn py-1.5 px-2 rounded-lg border border-slate-300 bg-white text-slate-700 font-semibold text-xs hover:bg-slate-100 transition shadow-2xs">
+                                        16 桁 (推奨)
+                                    </button>
+                                    <button type="button" onclick="selectFormGenLength(20)" id="formLenBtn-20" class="form-len-btn py-1.5 px-2 rounded-lg border border-indigo-400 bg-gradient-to-r from-brand-600 to-indigo-600 text-white font-bold text-xs shadow-xs transition">
+                                        20 桁 (最強)
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- 文字種選択チェックボックス -->
+                            <div>
+                                <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">含む文字の種類</span>
+                                <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-[11px]">
+                                    <label class="flex items-center space-x-1.5 p-1.5 bg-white rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-100/70 transition">
+                                        <input type="checkbox" id="formOptUpper" checked onchange="generatePasswordForForm()" class="rounded border-slate-300 text-brand-600 scale-90">
+                                        <span class="text-slate-700 font-medium truncate">大文字 (A-Z)</span>
+                                    </label>
+                                    <label class="flex items-center space-x-1.5 p-1.5 bg-white rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-100/70 transition">
+                                        <input type="checkbox" id="formOptLower" checked onchange="generatePasswordForForm()" class="rounded border-slate-300 text-brand-600 scale-90">
+                                        <span class="text-slate-700 font-medium truncate">小文字 (a-z)</span>
+                                    </label>
+                                    <label class="flex items-center space-x-1.5 p-1.5 bg-white rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-100/70 transition">
+                                        <input type="checkbox" id="formOptNumbers" checked onchange="generatePasswordForForm()" class="rounded border-slate-300 text-brand-600 scale-90">
+                                        <span class="text-slate-700 font-medium truncate">数字 (0-9)</span>
+                                    </label>
+                                    <label class="flex items-center space-x-1.5 p-1.5 bg-white rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-100/70 transition">
+                                        <input type="checkbox" id="formOptSymbols" checked onchange="generatePasswordForForm()" class="rounded border-slate-300 text-brand-600 scale-90">
+                                        <span class="text-slate-700 font-medium truncate">記号 (!@#$)</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
 
@@ -522,7 +579,7 @@
         </div>
     </div>
 
-    <!-- パスワード自動生成モーダル（暗号学的乱数 CSPRNG ＆ 誤操作防止ロック対応） -->
+    <!-- パスワード自動生成モーダル（単体起動ツール・CSPRNG ＆ 誤操作防止ロック対応） -->
     <div id="generatorModal" role="dialog" aria-modal="true" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm hidden items-center justify-center p-4">
         <div class="bg-white border border-slate-200 w-full max-w-md rounded-2xl shadow-2xl p-6 space-y-5">
             <div class="flex items-center justify-between pb-3 border-b border-slate-200">
@@ -827,15 +884,16 @@
 
     <script>
         /**
-         * KeyVault v2.4 堅牢化セキュアアーキテクチャ
-         * - パスワード誤変更・誤操作防止ロック機能（Generator & Form）
+         * KeyVault v2.5 堅牢化セキュアアーキテクチャ
+         * - サービス登録・編集画面でのCSPRNGパスワード生成オプション（12/16/20桁・文字種選択）
+         * - パスワード誤変更・誤操作防止ロック機能（Generator & Form双方に完備）
          * - パスワード変更時の Face ID / マスターパスワード再認証機構
          * - Web Crypto API (PBKDF2 600,000回 + AES-GCM 256bit)
          * - WebAuthn Platform Authenticator 生体認証 (Face ID / Touch ID)
          * - iOS Safari ITP 7日間ストレージパージ警告
          * - カード有効期限過去チェック & Luhnアルゴリズム検知
          */
-        const APP_VERSION = 'v2.4';
+        const APP_VERSION = 'v2.5';
         const STORAGE_KEY_VAULT = 'keyvault_encrypted_vault_v2';
         const STORAGE_KEY_LEGACY = 'keyvault_accounts_v1';
         const STORAGE_KEY_BIO = 'keyvault_biometric_auth_v1';
@@ -853,13 +911,14 @@
         let appState = {
             items: [],
             selectedCategory: 'all',
-            currentLength: 20,
+            currentLength: 20,       // 単体生成モーダルの桁数
+            formGenLength: 20,       // 登録フォーム内生成ツールの桁数
             deleteTargetId: null,
-            keyMaterial: null, // 非抽出PBKDF2鍵素材
-            cryptoKey: null,   // 現在のボールト用AES鍵
+            keyMaterial: null,       // 非抽出PBKDF2鍵素材
+            cryptoKey: null,         // 現在のボールト用AES鍵
             salt: null,
             isLocked: true,
-            // v2.4 パスワード誤変更防止ロック状態フラグ
+            // パスワード誤変更防止ロック状態フラグ
             isGeneratorLocked: false,
             isFormPasswordLocked: false
         };
@@ -1418,7 +1477,7 @@
             showToast('Face ID 連携を解除しました');
         }
 
-        // v2.4 センシティブ操作認証ダイアログ（Face ID または パスワード）
+        // センシティブ操作認証ダイアログ（Face ID または パスワード）
         function requestActionAuthentication(descText, onSuccessCallback) {
             pendingAuthSuccessCallback = onSuccessCallback;
             document.getElementById('actionAuthDesc').innerText = descText || 'パスワードを変更するにはロック解除が必要です';
@@ -1495,10 +1554,206 @@
         }
 
         /* ==========================================================================
-           4. v2.4 誤操作防止ロック＆パスワード生成制御
+           4. 暗号論的擬似乱数 (CSPRNG) & パスワード生成ロジック
            ========================================================================== */
 
-        // パスワード自動生成モーダルでの誤操作防止ロック制御
+        function cryptoRandomInt(max) {
+            const arr = new Uint32Array(1);
+            const limit = Math.floor(0xFFFFFFFF / max) * max;
+            let val;
+            do {
+                crypto.getRandomValues(arr);
+                val = arr[0];
+            } while (val >= limit);
+            return val % max;
+        }
+
+        // 共通CSPRNGパスワード生成アルゴリズム（棄却法・偏り完全排除）
+        function generateCryptoPassword(length, useUpper, useLower, useNumbers, useSymbols) {
+            const uppers = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+            const lowers = "abcdefghijkmnopqrstuvwxyz";
+            const numbers = "23456789";
+            const symbols = "!@#$%^&*()_+-=[]{}|;:,.<>?";
+
+            let charPool = "";
+            let guaranteed = [];
+
+            if (useUpper) { charPool += uppers; guaranteed.push(uppers[cryptoRandomInt(uppers.length)]); }
+            if (useLower) { charPool += lowers; guaranteed.push(lowers[cryptoRandomInt(lowers.length)]); }
+            if (useNumbers) { charPool += numbers; guaranteed.push(numbers[cryptoRandomInt(numbers.length)]); }
+            if (useSymbols) { charPool += symbols; guaranteed.push(symbols[cryptoRandomInt(symbols.length)]); }
+
+            if (!charPool) {
+                charPool = lowers + numbers;
+            }
+
+            let result = [...guaranteed];
+            for (let i = result.length; i < length; i++) {
+                result.push(charPool[cryptoRandomInt(charPool.length)]);
+            }
+
+            for (let i = result.length - 1; i > 0; i--) {
+                const j = cryptoRandomInt(i + 1);
+                [result[i], result[j]] = [result[j], result[i]];
+            }
+
+            return {
+                password: result.join(''),
+                poolSize: charPool.length
+            };
+        }
+
+        /* ==========================================================================
+           5. サービス登録・編集フォーム内のCSPRNGパスワード生成 & 保護ロック
+           ========================================================================== */
+
+        function selectFormGenLength(len) {
+            if (appState.isFormPasswordLocked) return;
+            appState.formGenLength = len;
+            [12, 16, 20].forEach(l => {
+                const btn = document.getElementById(`formLenBtn-${l}`);
+                if (!btn) return;
+                if (l === len) {
+                    btn.className = (l === 20)
+                        ? 'form-len-btn py-1.5 px-2 rounded-lg border border-indigo-400 bg-gradient-to-r from-brand-600 to-indigo-600 text-white font-bold text-xs shadow-xs transition'
+                        : 'form-len-btn py-1.5 px-2 rounded-lg border border-brand-500 bg-brand-600 text-white font-bold text-xs shadow-xs transition';
+                } else {
+                    btn.className = 'form-len-btn py-1.5 px-2 rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-100 font-semibold text-xs transition shadow-2xs';
+                }
+            });
+            generatePasswordForForm();
+        }
+
+        function generatePasswordForForm() {
+            if (appState.isFormPasswordLocked) return;
+
+            const len = appState.formGenLength || 20;
+            const useUpper = document.getElementById('formOptUpper').checked;
+            const useLower = document.getElementById('formOptLower').checked;
+            const useNumbers = document.getElementById('formOptNumbers').checked;
+            const useSymbols = document.getElementById('formOptSymbols').checked;
+
+            const { password, poolSize } = generateCryptoPassword(len, useUpper, useLower, useNumbers, useSymbols);
+            document.getElementById('itemPassword').value = password;
+
+            // フォーム内強度テキスト更新
+            const entropyText = document.getElementById('formGenEntropyText');
+            const bits = Math.round(password.length * Math.log2(Math.max(poolSize, 10)));
+            if (bits < 64) {
+                entropyText.innerText = `${len}桁 (${bits} bit 普通)`;
+                entropyText.className = 'text-[10px] font-bold text-amber-600 font-mono';
+            } else if (bits < 96) {
+                entropyText.innerText = `${len}桁 (${bits} bit 強固)`;
+                entropyText.className = 'text-[10px] font-bold text-blue-600 font-mono';
+            } else {
+                entropyText.innerText = `${len}桁 (${bits} bit 最強)`;
+                entropyText.className = 'text-[10px] font-bold text-emerald-600 font-mono';
+            }
+        }
+
+        function applyFormPasswordLock() {
+            const pass = document.getElementById('itemPassword').value.trim();
+            if (!pass) {
+                showToast('パスワードを入力または生成してください', true);
+                return;
+            }
+            setFormPasswordLockState(true);
+            showToast('パスワードを誤操作防止ロックしました');
+        }
+
+        function setFormPasswordLockState(isLocked) {
+            appState.isFormPasswordLocked = isLocked;
+            const passInput = document.getElementById('itemPassword');
+            const lockBadge = document.getElementById('formPwLockBadge');
+            const unlockBtn = document.getElementById('formUnlockPwBtn');
+            const lockBtn = document.getElementById('formLockPwBtn');
+            const genPanel = document.getElementById('formGenPanel');
+
+            if (isLocked) {
+                passInput.readOnly = true;
+                passInput.classList.add('bg-slate-100', 'cursor-not-allowed');
+                lockBadge.classList.remove('hidden');
+                unlockBtn.classList.remove('hidden');
+                if (lockBtn) lockBtn.classList.add('hidden');
+                if (genPanel) genPanel.classList.add('opacity-40', 'pointer-events-none');
+            } else {
+                passInput.readOnly = false;
+                passInput.classList.remove('bg-slate-100', 'cursor-not-allowed');
+                lockBadge.classList.add('hidden');
+                unlockBtn.classList.add('hidden');
+                if (lockBtn) lockBtn.classList.remove('hidden');
+                if (genPanel) genPanel.classList.remove('opacity-40', 'pointer-events-none');
+            }
+        }
+
+        function requestFormPasswordUnlock() {
+            requestActionAuthentication('パスワードを変更・再生成するにはロック解除が必要です', () => {
+                setFormPasswordLockState(false);
+                showToast('パスワードの保護を解除しました。桁数変更・再生成が可能です');
+                document.getElementById('itemPassword').focus();
+            });
+        }
+
+        /* ==========================================================================
+           6. 単体パスワード生成モーダル（ツール）制御
+           ========================================================================== */
+
+        function selectLength(len) {
+            if (appState.isGeneratorLocked) return;
+            appState.currentLength = len;
+            [12, 16, 20].forEach(l => {
+                const btn = document.getElementById(`lenBtn-${l}`);
+                if (!btn) return;
+                if (l === len) {
+                    btn.className = (l === 20)
+                        ? 'len-btn py-2.5 rounded-xl border border-indigo-400 bg-gradient-to-r from-brand-600 to-indigo-600 text-white font-bold text-sm transition shadow-md shadow-indigo-500/25'
+                        : 'len-btn py-2.5 rounded-xl border border-brand-500 bg-brand-600 text-white font-bold text-sm transition shadow-sm shadow-brand-500/20';
+                } else {
+                    btn.className = 'len-btn py-2.5 rounded-xl border border-slate-300 bg-white text-slate-700 hover:bg-slate-100 font-semibold text-sm transition shadow-2xs';
+                }
+            });
+            generateRandomPassword();
+        }
+
+        function generateRandomPassword() {
+            if (appState.isGeneratorLocked) return;
+
+            const length = appState.currentLength;
+            const useUpper = document.getElementById('optUpper').checked;
+            const useLower = document.getElementById('optLower').checked;
+            const useNumbers = document.getElementById('optNumbers').checked;
+            const useSymbols = document.getElementById('optSymbols').checked;
+
+            const { password, poolSize } = generateCryptoPassword(length, useUpper, useLower, useNumbers, useSymbols);
+            document.getElementById('genResultOutput').value = password;
+            calculateEntropyMeter(password, poolSize);
+        }
+
+        function calculateEntropyMeter(password, poolSize) {
+            const bar = document.getElementById('genStrengthBar');
+            const label = document.getElementById('genStrengthLabel');
+
+            if (!password || poolSize <= 0) return;
+
+            const bits = Math.round(password.length * Math.log2(poolSize));
+            if (bits < 64) {
+                bar.style.width = '40%';
+                bar.className = 'h-full bg-amber-500 w-full transition-all duration-300';
+                label.innerText = `${bits} bit (普通)`;
+                label.className = 'text-[11px] font-bold text-amber-600 font-mono';
+            } else if (bits < 96) {
+                bar.style.width = '75%';
+                bar.className = 'h-full bg-blue-500 w-full transition-all duration-300';
+                label.innerText = `${bits} bit (強固)`;
+                label.className = 'text-[11px] font-bold text-blue-600 font-mono';
+            } else {
+                bar.style.width = '100%';
+                bar.className = 'h-full bg-gradient-to-r from-emerald-500 to-indigo-600 w-full transition-all duration-300';
+                label.innerText = `${bits} bit (最強・鉄壁)`;
+                label.className = 'text-[11px] font-extrabold text-brand-700 font-mono';
+            }
+        }
+
         function setGeneratorLockState(isLocked) {
             appState.isGeneratorLocked = isLocked;
             const badge = document.getElementById('genLockBadge');
@@ -1538,39 +1793,37 @@
             }
         }
 
-        // サービス登録・編集フォームでのパスワード上書き防止ロック制御
-        function setFormPasswordLockState(isLocked) {
-            appState.isFormPasswordLocked = isLocked;
-            const passInput = document.getElementById('itemPassword');
-            const lockBadge = document.getElementById('formPwLockBadge');
-            const unlockBtn = document.getElementById('formUnlockPwBtn');
-            const generateBtn = document.getElementById('formGeneratePwBtn');
+        function applyGeneratedPasswordToForm() {
+            const pass = document.getElementById('genResultOutput').value;
+            if (!pass) return;
 
-            if (isLocked) {
-                passInput.readOnly = true;
-                passInput.classList.add('bg-slate-100', 'cursor-not-allowed');
-                lockBadge.classList.remove('hidden');
-                unlockBtn.classList.remove('hidden');
-                generateBtn.classList.add('hidden');
+            const itemModal = document.getElementById('itemModal');
+            if (!itemModal.classList.contains('hidden')) {
+                document.getElementById('itemPassword').value = pass;
+                setFormPasswordLockState(true);
+                closeGeneratorModal();
+                showToast('パスワード入力欄に適用し保護ロックしました');
             } else {
-                passInput.readOnly = false;
-                passInput.classList.remove('bg-slate-100', 'cursor-not-allowed');
-                lockBadge.classList.add('hidden');
-                unlockBtn.classList.add('hidden');
-                generateBtn.classList.remove('hidden');
+                copyToClipboard(pass, '生成パスワードをコピーしました（30秒後に消去）');
+                closeGeneratorModal();
             }
         }
 
-        function requestFormPasswordUnlock() {
-            requestActionAuthentication('パスワードを変更・上書きするにはロック解除が必要です', () => {
-                setFormPasswordLockState(false);
-                showToast('パスワードの保護を解除しました。変更が可能です');
-                document.getElementById('itemPassword').focus();
-            });
+        function openGeneratorModal() {
+            document.getElementById('generatorModal').classList.remove('hidden');
+            document.getElementById('generatorModal').classList.add('flex');
+            setGeneratorLockState(false);
+            selectLength(20);
+        }
+
+        function closeGeneratorModal() {
+            document.getElementById('generatorModal').classList.add('hidden');
+            document.getElementById('generatorModal').classList.remove('flex');
+            setGeneratorLockState(false);
         }
 
         /* ==========================================================================
-           5. サニタイズ & 暗号論的擬似乱数 (CSPRNG)
+           7. データサニタイズ & クレジットカード判定
            ========================================================================== */
 
         function sanitizeItem(raw) {
@@ -1596,126 +1849,6 @@
                 createdAt: createdAt,
                 updatedAt: updatedAt
             };
-        }
-
-        function cryptoRandomInt(max) {
-            const arr = new Uint32Array(1);
-            const limit = Math.floor(0xFFFFFFFF / max) * max;
-            let val;
-            do {
-                crypto.getRandomValues(arr);
-                val = arr[0];
-            } while (val >= limit);
-            return val % max;
-        }
-
-        function selectLength(len) {
-            if (appState.isGeneratorLocked) return;
-            appState.currentLength = len;
-            [12, 16, 20].forEach(l => {
-                const btn = document.getElementById(`lenBtn-${l}`);
-                if (!btn) return;
-                if (l === len) {
-                    btn.className = (l === 20)
-                        ? 'len-btn py-2.5 rounded-xl border border-indigo-400 bg-gradient-to-r from-brand-600 to-indigo-600 text-white font-bold text-sm transition shadow-md shadow-indigo-500/25'
-                        : 'len-btn py-2.5 rounded-xl border border-brand-500 bg-brand-600 text-white font-bold text-sm transition shadow-sm shadow-brand-500/20';
-                } else {
-                    btn.className = 'len-btn py-2.5 rounded-xl border border-slate-300 bg-white text-slate-700 hover:bg-slate-100 font-semibold text-sm transition shadow-2xs';
-                }
-            });
-            generateRandomPassword();
-        }
-
-        function generateRandomPassword() {
-            if (appState.isGeneratorLocked) return;
-
-            const length = appState.currentLength;
-            const useUpper = document.getElementById('optUpper').checked;
-            const useLower = document.getElementById('optLower').checked;
-            const useNumbers = document.getElementById('optNumbers').checked;
-            const useSymbols = document.getElementById('optSymbols').checked;
-
-            const uppers = "ABCDEFGHJKLMNPQRSTUVWXYZ";
-            const lowers = "abcdefghijkmnopqrstuvwxyz";
-            const numbers = "23456789";
-            const symbols = "!@#$%^&*()_+-=[]{}|;:,.<>?";
-
-            let charPool = "";
-            let guaranteed = [];
-
-            if (useUpper) { charPool += uppers; guaranteed.push(uppers[cryptoRandomInt(uppers.length)]); }
-            if (useLower) { charPool += lowers; guaranteed.push(lowers[cryptoRandomInt(lowers.length)]); }
-            if (useNumbers) { charPool += numbers; guaranteed.push(numbers[cryptoRandomInt(numbers.length)]); }
-            if (useSymbols) { charPool += symbols; guaranteed.push(symbols[cryptoRandomInt(symbols.length)]); }
-
-            if (!charPool) {
-                charPool = lowers + numbers;
-            }
-
-            let result = [...guaranteed];
-            for (let i = result.length; i < length; i++) {
-                result.push(charPool[cryptoRandomInt(charPool.length)]);
-            }
-
-            for (let i = result.length - 1; i > 0; i--) {
-                const j = cryptoRandomInt(i + 1);
-                [result[i], result[j]] = [result[j], result[i]];
-            }
-
-            const finalPassword = result.join('');
-            document.getElementById('genResultOutput').value = finalPassword;
-            calculateEntropyMeter(finalPassword, charPool.length);
-        }
-
-        function calculateEntropyMeter(password, poolSize) {
-            const bar = document.getElementById('genStrengthBar');
-            const label = document.getElementById('genStrengthLabel');
-
-            if (!password || poolSize <= 0) return;
-
-            const bits = Math.round(password.length * Math.log2(poolSize));
-            if (bits < 64) {
-                bar.style.width = '40%';
-                bar.className = 'h-full bg-amber-500 w-full transition-all duration-300';
-                label.innerText = `${bits} bit (普通)`;
-                label.className = 'text-[11px] font-bold text-amber-600 font-mono';
-            } else if (bits < 96) {
-                bar.style.width = '75%';
-                bar.className = 'h-full bg-blue-500 w-full transition-all duration-300';
-                label.innerText = `${bits} bit (強固)`;
-                label.className = 'text-[11px] font-bold text-blue-600 font-mono';
-            } else {
-                bar.style.width = '100%';
-                bar.className = 'h-full bg-gradient-to-r from-emerald-500 to-indigo-600 w-full transition-all duration-300';
-                label.innerText = `${bits} bit (最強・鉄壁)`;
-                label.className = 'text-[11px] font-extrabold text-brand-700 font-mono';
-            }
-        }
-
-        function insertGeneratedPasswordIntoForm() {
-            if (appState.isFormPasswordLocked) return;
-            selectLength(20);
-            const pass = document.getElementById('genResultOutput').value;
-            document.getElementById('itemPassword').value = pass;
-            // 生成したパスワードを即座に保護ロック
-            setFormPasswordLockState(true);
-            showToast('20桁パスワードをセットし誤操作防止ロックしました');
-        }
-
-        function applyGeneratedPasswordToForm() {
-            const pass = document.getElementById('genResultOutput').value;
-            if (!pass) return;
-
-            const itemModal = document.getElementById('itemModal');
-            if (!itemModal.classList.contains('hidden')) {
-                document.getElementById('itemPassword').value = pass;
-                setFormPasswordLockState(true);
-                closeGeneratorModal();
-                showToast('パスワード入力欄に適用し保護ロックしました');
-            } else {
-                copyToClipboard(pass, '生成パスワードをコピーしました（30秒後に消去）');
-                closeGeneratorModal();
-            }
         }
 
         function checkCardExpiryWarning(expiryStr) {
@@ -1745,8 +1878,60 @@
             }
         }
 
+        function handleCardPanInput(input) {
+            let digits = input.value.replace(/\D/g, '');
+            let brand = 'CREDIT CARD';
+            let formatted = digits;
+
+            if (/^3[47]/.test(digits)) {
+                brand = 'American Express';
+                formatted = digits.replace(/^(\d{4})(\d{0,6})(\d{0,5}).*/, '$1 $2 $3').trim();
+            } else if (/^4/.test(digits)) {
+                brand = 'VISA';
+                formatted = digits.replace(/(\d{4})(?=\d)/g, '$1 ').trim();
+            } else if (/^5[1-5]/.test(digits) || /^2[2-7]/.test(digits)) {
+                brand = 'Mastercard';
+                formatted = digits.replace(/(\d{4})(?=\d)/g, '$1 ').trim();
+            } else if (/^(?:2131|1800|35)/.test(digits)) {
+                brand = 'JCB';
+                formatted = digits.replace(/(\d{4})(?=\d)/g, '$1 ').trim();
+            } else {
+                formatted = digits.replace(/(\d{4})(?=\d)/g, '$1 ').trim();
+            }
+
+            input.value = formatted;
+            const brandInput = document.getElementById('cardBrand');
+            if (!brandInput.value || brandInput.dataset.autoSet === 'true') {
+                brandInput.value = brand;
+                brandInput.dataset.autoSet = 'true';
+            }
+
+            const warningEl = document.getElementById('cardPanLuhnWarning');
+            if (digits.length >= 13) {
+                const isValid = checkLuhn(digits);
+                warningEl.classList.toggle('hidden', isValid);
+            } else {
+                warningEl.classList.add('hidden');
+            }
+        }
+
+        function checkLuhn(numStr) {
+            let sum = 0;
+            let shouldDouble = false;
+            for (let i = numStr.length - 1; i >= 0; i--) {
+                let digit = parseInt(numStr.charAt(i), 10);
+                if (shouldDouble) {
+                    digit *= 2;
+                    if (digit > 9) digit -= 9;
+                }
+                sum += digit;
+                shouldDouble = !shouldDouble;
+            }
+            return (sum % 10) === 0;
+        }
+
         /* ==========================================================================
-           6. UI・イベント委譲 & レンダリング
+           8. UI・イベント委譲 & レンダリング
            ========================================================================== */
 
         function setupEventDelegation() {
@@ -1909,7 +2094,7 @@
         }
 
         /* ==========================================================================
-           7. 詳細モーダル・セキュア表示
+           9. 詳細モーダル・セキュア表示
            ========================================================================== */
 
         let currentDetailItem = null;
@@ -2045,7 +2230,7 @@
         }
 
         /* ==========================================================================
-           8. フォーム操作 & クレジットカード判別
+           10. フォーム操作 & モーダル開閉
            ========================================================================== */
 
         function openItemModal(itemId = null) {
@@ -2061,6 +2246,7 @@
             document.getElementById('saveBtnText').innerText = '暗号化して保存';
 
             setFormPasswordLockState(false);
+            selectFormGenLength(20); // フォーム内デフォルト20桁で初期化生成
 
             const defaultCat = (appState.selectedCategory !== 'all') ? appState.selectedCategory : 'sns';
             const radio = document.querySelector(`input[name="itemCategory"][value="${defaultCat}"]`);
@@ -2084,7 +2270,7 @@
             document.getElementById('itemPassword').value = item.password || '';
             document.getElementById('itemNotes').value = item.notes || '';
 
-            // 編集時はパスワード欄を自動で保護ロック
+            // 編集時はパスワード欄を自動で保護ロック（誤タップによる変更防止）
             setFormPasswordLockState(true);
 
             const radio = document.querySelector(`input[name="itemCategory"][value="${item.category}"]`);
@@ -2119,58 +2305,6 @@
         function onCategoryRadioChange(catVal) {
             const ccSection = document.getElementById('creditCardSection');
             ccSection.classList.toggle('hidden', catVal !== 'card');
-        }
-
-        function handleCardPanInput(input) {
-            let digits = input.value.replace(/\D/g, '');
-            let brand = 'CREDIT CARD';
-            let formatted = digits;
-
-            if (/^3[47]/.test(digits)) {
-                brand = 'American Express';
-                formatted = digits.replace(/^(\d{4})(\d{0,6})(\d{0,5}).*/, '$1 $2 $3').trim();
-            } else if (/^4/.test(digits)) {
-                brand = 'VISA';
-                formatted = digits.replace(/(\d{4})(?=\d)/g, '$1 ').trim();
-            } else if (/^5[1-5]/.test(digits) || /^2[2-7]/.test(digits)) {
-                brand = 'Mastercard';
-                formatted = digits.replace(/(\d{4})(?=\d)/g, '$1 ').trim();
-            } else if (/^(?:2131|1800|35)/.test(digits)) {
-                brand = 'JCB';
-                formatted = digits.replace(/(\d{4})(?=\d)/g, '$1 ').trim();
-            } else {
-                formatted = digits.replace(/(\d{4})(?=\d)/g, '$1 ').trim();
-            }
-
-            input.value = formatted;
-            const brandInput = document.getElementById('cardBrand');
-            if (!brandInput.value || brandInput.dataset.autoSet === 'true') {
-                brandInput.value = brand;
-                brandInput.dataset.autoSet = 'true';
-            }
-
-            const warningEl = document.getElementById('cardPanLuhnWarning');
-            if (digits.length >= 13) {
-                const isValid = checkLuhn(digits);
-                warningEl.classList.toggle('hidden', isValid);
-            } else {
-                warningEl.classList.add('hidden');
-            }
-        }
-
-        function checkLuhn(numStr) {
-            let sum = 0;
-            let shouldDouble = false;
-            for (let i = numStr.length - 1; i >= 0; i--) {
-                let digit = parseInt(numStr.charAt(i), 10);
-                if (shouldDouble) {
-                    digit *= 2;
-                    if (digit > 9) digit -= 9;
-                }
-                sum += digit;
-                shouldDouble = !shouldDouble;
-            }
-            return (sum % 10) === 0;
         }
 
         async function handleFormSubmit(event) {
@@ -2272,7 +2406,7 @@
         }
 
         /* ==========================================================================
-           9. エクスポート & インポート
+           11. エクスポート & インポート
            ========================================================================== */
 
         function openExportModal() {
@@ -2433,7 +2567,7 @@
         }
 
         /* ==========================================================================
-           10. クリップボード & ヘルパー
+           12. クリップボード & ユーティリティ
            ========================================================================== */
 
         async function copyToClipboard(text, successMsg = 'コピーしました') {
@@ -2474,19 +2608,6 @@
         function copyFromInput(inputId) {
             const val = document.getElementById(inputId).value;
             copyToClipboard(val, 'パスワードをコピーしました（30秒後に自動消去）');
-        }
-
-        function openGeneratorModal() {
-            document.getElementById('generatorModal').classList.remove('hidden');
-            document.getElementById('generatorModal').classList.add('flex');
-            setGeneratorLockState(false);
-            generateRandomPassword();
-        }
-
-        function closeGeneratorModal() {
-            document.getElementById('generatorModal').classList.add('hidden');
-            document.getElementById('generatorModal').classList.remove('flex');
-            setGeneratorLockState(false);
         }
 
         function toggleInputPasswordVisibility(inputId, btn) {
