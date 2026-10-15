@@ -91,7 +91,7 @@
             <div>
                 <h2 class="text-xl font-bold text-slate-900 flex items-center justify-center gap-2">
                     <span>KeyVault 安全認証</span>
-                    <span class="text-xs font-mono px-2 py-0.5 rounded-full bg-brand-50 text-brand-700 font-bold border border-brand-200 app-version-badge">v2.3</span>
+                    <span class="text-xs font-mono px-2 py-0.5 rounded-full bg-brand-50 text-brand-700 font-bold border border-brand-200 app-version-badge">v2.4</span>
                 </h2>
                 <p id="authSubtitle" class="text-xs text-slate-500 mt-1">データをAES-256で強固に暗号化保護しています</p>
             </div>
@@ -167,7 +167,7 @@
                     <h1 class="text-base sm:text-lg font-bold tracking-tight text-slate-900 flex items-center gap-1.5 sm:gap-2">
                         <span>KeyVault</span>
                         <span class="hidden sm:inline-block text-xs px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold">AES-256</span>
-                        <span class="app-version-badge text-[10px] font-mono font-medium text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-md border border-slate-200 shrink-0">v2.3</span>
+                        <span class="app-version-badge text-[10px] font-mono font-medium text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-md border border-slate-200 shrink-0">v2.4</span>
                     </h1>
                     <p class="hidden sm:block text-xs text-slate-500 truncate">完全暗号化ID・パスワードマネージャー</p>
                 </div>
@@ -260,7 +260,7 @@
             </div>
             <div class="flex items-center gap-1 font-mono text-[11px] text-slate-400">
                 <span>Version:</span>
-                <span class="app-version-badge font-semibold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">v2.3</span>
+                <span class="app-version-badge font-semibold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">v2.4</span>
             </div>
         </div>
     </footer>
@@ -430,11 +430,26 @@
                                autocapitalize="off" autocorrect="off" spellcheck="false" inputmode="email">
                     </div>
                     <div>
+                        <!-- パスワード保護ロック＆生成バー -->
                         <div class="flex items-center justify-between mb-1.5">
-                            <label class="text-xs font-bold text-slate-500 uppercase tracking-wider">パスワード <span class="text-rose-500">*</span></label>
-                            <button type="button" onclick="insertGeneratedPasswordIntoForm()" class="text-xs text-brand-600 hover:text-brand-700 font-semibold flex items-center gap-1">
-                                <i class="fa-solid fa-wand-magic-sparkles"></i> 20桁CSPRNG生成
-                            </button>
+                            <label class="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                                <span>パスワード</span>
+                                <span class="text-rose-500">*</span>
+                                <!-- ロック状態バッジ -->
+                                <span id="formPwLockBadge" class="hidden text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                    <i class="fa-solid fa-lock text-[9px]"></i> 保護ロック中
+                                </span>
+                            </label>
+                            <div class="flex items-center gap-2">
+                                <!-- ロック解除・変更ボタン（ロック時のみ表示） -->
+                                <button type="button" id="formUnlockPwBtn" onclick="requestFormPasswordUnlock()" class="hidden text-xs text-amber-600 hover:text-amber-700 font-bold flex items-center gap-1">
+                                    <i class="fa-solid fa-lock-open"></i> 変更（解除）
+                                </button>
+                                <!-- 生成ボタン（ロック時は非活性） -->
+                                <button type="button" id="formGeneratePwBtn" onclick="insertGeneratedPasswordIntoForm()" class="text-xs text-brand-600 hover:text-brand-700 font-semibold flex items-center gap-1">
+                                    <i class="fa-solid fa-wand-magic-sparkles"></i> 20桁CSPRNG生成
+                                </button>
+                            </div>
                         </div>
                         <div class="relative">
                             <input type="password" id="itemPassword" required placeholder="パスワードを入力"
@@ -507,9 +522,9 @@
         </div>
     </div>
 
-    <!-- パスワード自動生成モーダル（暗号学的乱数 CSPRNG 対応） -->
+    <!-- パスワード自動生成モーダル（暗号学的乱数 CSPRNG ＆ 誤操作防止ロック対応） -->
     <div id="generatorModal" role="dialog" aria-modal="true" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm hidden items-center justify-center p-4">
-        <div class="bg-white border border-slate-200 w-full max-w-md rounded-2xl shadow-2xl p-6 space-y-6">
+        <div class="bg-white border border-slate-200 w-full max-w-md rounded-2xl shadow-2xl p-6 space-y-5">
             <div class="flex items-center justify-between pb-3 border-b border-slate-200">
                 <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
                     <i class="fa-solid fa-key text-amber-500"></i>
@@ -521,12 +536,19 @@
             </div>
 
             <div class="space-y-2">
-                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider">生成パスワード</label>
+                <div class="flex items-center justify-between">
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider">生成パスワード</label>
+                    <!-- 生成モーダルロック状態バッジ -->
+                    <span id="genLockBadge" class="hidden text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
+                        <i class="fa-solid fa-lock text-[9px]"></i> 誤操作防止ロック中
+                    </span>
+                </div>
                 <div class="relative flex items-center">
                     <input type="text" id="genResultOutput" readonly
                            class="w-full bg-slate-900 border border-slate-800 text-amber-400 font-mono text-base font-bold tracking-wider rounded-xl px-4 py-3 pr-24 focus:outline-none select-all shadow-inner">
                     <div class="absolute right-2 flex items-center gap-1">
-                        <button type="button" onclick="generateRandomPassword()" title="再生成" class="p-2 text-slate-400 hover:text-amber-400 rounded-lg hover:bg-slate-800 transition">
+                        <!-- 再生成ボタン（ロック時は非活性） -->
+                        <button type="button" id="genRefreshBtn" onclick="generateRandomPassword()" title="再生成" class="p-2 text-slate-400 hover:text-amber-400 rounded-lg hover:bg-slate-800 transition">
                             <i class="fa-solid fa-arrows-rotate"></i>
                         </button>
                         <button type="button" onclick="copyFromInput('genResultOutput')" title="コピー" class="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition">
@@ -542,48 +564,62 @@
                 </div>
             </div>
 
-            <!-- 桁数選択ボタン -->
-            <div class="space-y-2">
-                <div class="flex items-center justify-between">
-                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider">文字数（桁数）</label>
-                    <span class="text-[10px] text-emerald-600 font-bold">※安全基準に基づき12文字以上のみ</span>
+            <!-- 誤操作防止ロック / 変更解除操作バー -->
+            <div id="genLockActionBox" class="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
+                <div class="text-xs">
+                    <span id="genLockStatusText" class="font-bold text-slate-700">パスワードを確定して保護</span>
+                    <p class="text-[10px] text-slate-400 mt-0.5">ボタンの誤タップによる意図しない再生成を防ぎます</p>
                 </div>
-                <div class="grid grid-cols-3 gap-2">
-                    <button type="button" onclick="selectLength(12)" id="lenBtn-12" class="len-btn py-2.5 rounded-xl border border-slate-300 font-semibold text-sm transition">
-                        12 桁
-                    </button>
-                    <button type="button" onclick="selectLength(16)" id="lenBtn-16" class="len-btn py-2.5 rounded-xl border border-slate-300 font-semibold text-sm transition">
-                        16 桁 (推奨)
-                    </button>
-                    <button type="button" onclick="selectLength(20)" id="lenBtn-20" class="len-btn py-2.5 rounded-xl border border-slate-300 font-semibold text-sm transition">
-                        20 桁 (最強)
-                    </button>
+                <button type="button" id="genLockToggleBtn" onclick="toggleGeneratorLock()" class="px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-xs bg-slate-800 hover:bg-slate-900 text-white">
+                    <i class="fa-solid fa-lock"></i>
+                    <span>ロックして保護</span>
+                </button>
+            </div>
+
+            <!-- 桁数選択ボタン（ロック時はdisabled） -->
+            <div id="genConfigSection" class="space-y-3 transition-opacity">
+                <div class="space-y-2">
+                    <div class="flex items-center justify-between">
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider">文字数（桁数）</label>
+                        <span class="text-[10px] text-emerald-600 font-bold">※安全基準に基づき12文字以上のみ</span>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button type="button" onclick="selectLength(12)" id="lenBtn-12" class="len-btn py-2.5 rounded-xl border border-slate-300 font-semibold text-sm transition">
+                            12 桁
+                        </button>
+                        <button type="button" onclick="selectLength(16)" id="lenBtn-16" class="len-btn py-2.5 rounded-xl border border-slate-300 font-semibold text-sm transition">
+                            16 桁 (推奨)
+                        </button>
+                        <button type="button" onclick="selectLength(20)" id="lenBtn-20" class="len-btn py-2.5 rounded-xl border border-slate-300 font-semibold text-sm transition">
+                            20 桁 (最強)
+                        </button>
+                    </div>
+                </div>
+
+                <div class="space-y-2.5 pt-1">
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider">含む文字の種類</label>
+                    <div class="grid grid-cols-2 gap-2 text-xs">
+                        <label class="flex items-center space-x-2 p-2.5 bg-slate-50 rounded-xl cursor-pointer hover:bg-slate-100 border border-slate-200 transition">
+                            <input type="checkbox" id="optUpper" checked onchange="generateRandomPassword()" class="rounded border-slate-300 text-brand-600">
+                            <span class="text-slate-800 font-medium">大文字 (A-Z)</span>
+                        </label>
+                        <label class="flex items-center space-x-2 p-2.5 bg-slate-50 rounded-xl cursor-pointer hover:bg-slate-100 border border-slate-200 transition">
+                            <input type="checkbox" id="optLower" checked onchange="generateRandomPassword()" class="rounded border-slate-300 text-brand-600">
+                            <span class="text-slate-800 font-medium">小文字 (a-z)</span>
+                        </label>
+                        <label class="flex items-center space-x-2 p-2.5 bg-slate-50 rounded-xl cursor-pointer hover:bg-slate-100 border border-slate-200 transition">
+                            <input type="checkbox" id="optNumbers" checked onchange="generateRandomPassword()" class="rounded border-slate-300 text-brand-600">
+                            <span class="text-slate-800 font-medium">数字 (0-9)</span>
+                        </label>
+                        <label class="flex items-center space-x-2 p-2.5 bg-slate-50 rounded-xl cursor-pointer hover:bg-slate-100 border border-slate-200 transition">
+                            <input type="checkbox" id="optSymbols" checked onchange="generateRandomPassword()" class="rounded border-slate-300 text-brand-600">
+                            <span class="text-slate-800 font-medium">記号 (!@#$%&*)</span>
+                        </label>
+                    </div>
                 </div>
             </div>
 
-            <div class="space-y-2.5 pt-1">
-                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider">含む文字の種類</label>
-                <div class="grid grid-cols-2 gap-2 text-xs">
-                    <label class="flex items-center space-x-2 p-2.5 bg-slate-50 rounded-xl cursor-pointer hover:bg-slate-100 border border-slate-200 transition">
-                        <input type="checkbox" id="optUpper" checked onchange="generateRandomPassword()" class="rounded border-slate-300 text-brand-600">
-                        <span class="text-slate-800 font-medium">大文字 (A-Z)</span>
-                    </label>
-                    <label class="flex items-center space-x-2 p-2.5 bg-slate-50 rounded-xl cursor-pointer hover:bg-slate-100 border border-slate-200 transition">
-                        <input type="checkbox" id="optLower" checked onchange="generateRandomPassword()" class="rounded border-slate-300 text-brand-600">
-                        <span class="text-slate-800 font-medium">小文字 (a-z)</span>
-                    </label>
-                    <label class="flex items-center space-x-2 p-2.5 bg-slate-50 rounded-xl cursor-pointer hover:bg-slate-100 border border-slate-200 transition">
-                        <input type="checkbox" id="optNumbers" checked onchange="generateRandomPassword()" class="rounded border-slate-300 text-brand-600">
-                        <span class="text-slate-800 font-medium">数字 (0-9)</span>
-                    </label>
-                    <label class="flex items-center space-x-2 p-2.5 bg-slate-50 rounded-xl cursor-pointer hover:bg-slate-100 border border-slate-200 transition">
-                        <input type="checkbox" id="optSymbols" checked onchange="generateRandomPassword()" class="rounded border-slate-300 text-brand-600">
-                        <span class="text-slate-800 font-medium">記号 (!@#$%&*)</span>
-                    </label>
-                </div>
-            </div>
-
-            <div class="pt-2 flex items-center justify-between gap-3">
+            <div class="pt-2 flex items-center justify-between gap-3 border-t border-slate-100">
                 <button type="button" onclick="closeGeneratorModal()" class="w-full py-2.5 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-100 text-sm font-semibold transition">
                     閉じる
                 </button>
@@ -592,6 +628,48 @@
                     <span>パスワードに採用</span>
                 </button>
             </div>
+        </div>
+    </div>
+
+    <!-- パスワード変更・重要操作認証モーダル（Face ID / マスターパスワード再認証） -->
+    <div id="actionAuthModal" role="dialog" aria-modal="true" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4">
+        <div class="bg-white border border-slate-200 w-full max-w-sm rounded-3xl shadow-2xl p-6 text-center space-y-4 animate-in fade-in zoom-in-95 duration-200">
+            <div class="w-12 h-12 bg-amber-50 text-amber-600 rounded-2xl mx-auto flex items-center justify-center text-xl border border-amber-200 shadow-xs">
+                <i class="fa-solid fa-shield-halved"></i>
+            </div>
+            <div>
+                <h4 class="text-base font-bold text-slate-900">本人確認認証</h4>
+                <p id="actionAuthDesc" class="text-xs text-slate-500 mt-1">パスワードを変更するにはロック解除が必要です</p>
+            </div>
+
+            <!-- 生体認証ボタン（登録済みの場合優先表示） -->
+            <div id="actionBioBtnContainer" class="hidden">
+                <button type="button" onclick="executeActionBiometricUnlock()" class="w-full py-3 bg-gradient-to-r from-indigo-600 to-brand-600 hover:from-indigo-700 hover:to-brand-700 text-white font-bold rounded-xl shadow-md shadow-indigo-600/25 text-xs transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-face-smile text-base"></i>
+                    <span>Face ID でロック解除</span>
+                </button>
+                <div class="relative flex items-center justify-center my-3">
+                    <div class="border-t border-slate-200 w-full"></div>
+                    <span class="bg-white px-2 text-[10px] text-slate-400 font-medium absolute">またはパスワード</span>
+                </div>
+            </div>
+
+            <form onsubmit="handleActionPasswordAuth(event)" class="space-y-3">
+                <input type="password" id="actionAuthPassInput" placeholder="マスターパスワードを入力" required
+                       class="w-full bg-slate-50 border border-slate-300 text-slate-900 rounded-xl px-3.5 py-2.5 text-xs focus:outline-none focus:bg-white focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition">
+                <p id="actionAuthError" class="hidden text-[11px] text-rose-600 font-semibold flex items-center justify-center gap-1">
+                    <i class="fa-solid fa-circle-exclamation"></i>
+                    <span>パスワードが正しくありません</span>
+                </p>
+                <div class="flex items-center gap-2 pt-1">
+                    <button type="button" onclick="closeActionAuthModal()" class="w-1/2 py-2.5 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-100 text-xs font-semibold transition">
+                        キャンセル
+                    </button>
+                    <button type="submit" class="w-1/2 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold transition shadow-md shadow-brand-600/25">
+                        解除する
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -609,7 +687,7 @@
             </div>
 
             <div class="space-y-3 text-xs text-slate-600 leading-relaxed">
-                <p>設定すると、次回からマスターパスワードを入力せずに Face ID / Touch ID だけでボールトを解錠できます。</p>
+                <p>設定すると、次回からマスターパスワードを入力せずに Face ID / Touch ID だけでボールトを解錠できます。また、パスワードの変更時ロック解除にもワンタッチで利用できます。</p>
                 <ul class="list-disc pl-4 space-y-1.5 text-slate-500">
                     <li>顔データは端末内のセキュアエンクレーブに保管され、アプリには一切渡りません。</li>
                     <li>マスターパスワードは Face ID 由来の鍵で暗号化して端末内に保存されます。</li>
@@ -749,15 +827,15 @@
 
     <script>
         /**
-         * KeyVault v2.3 堅牢化セキュアアーキテクチャ（生体認証 Face ID / WebAuthn 統合版）
+         * KeyVault v2.4 堅牢化セキュアアーキテクチャ
+         * - パスワード誤変更・誤操作防止ロック機能（Generator & Form）
+         * - パスワード変更時の Face ID / マスターパスワード再認証機構
          * - Web Crypto API (PBKDF2 600,000回 + AES-GCM 256bit)
-         * - Face ID / Touch ID 生体認証連携 (WebAuthn Platform Authenticator)
-         * - iOS Safari ITP 7日間データ自動削除警告バナー
-         * - クレジットカード有効期限の過去日付チェック (MM/YY)
-         * - クロスデバイス鍵導出 & 非抽出 keyMaterial 保持
-         * - updatedAt 先祖返り防止 & ロック時DOM完全初期化
+         * - WebAuthn Platform Authenticator 生体認証 (Face ID / Touch ID)
+         * - iOS Safari ITP 7日間ストレージパージ警告
+         * - カード有効期限過去チェック & Luhnアルゴリズム検知
          */
-        const APP_VERSION = 'v2.3';
+        const APP_VERSION = 'v2.4';
         const STORAGE_KEY_VAULT = 'keyvault_encrypted_vault_v2';
         const STORAGE_KEY_LEGACY = 'keyvault_accounts_v1';
         const STORAGE_KEY_BIO = 'keyvault_biometric_auth_v1';
@@ -780,7 +858,10 @@
             keyMaterial: null, // 非抽出PBKDF2鍵素材
             cryptoKey: null,   // 現在のボールト用AES鍵
             salt: null,
-            isLocked: true
+            isLocked: true,
+            // v2.4 パスワード誤変更防止ロック状態フラグ
+            isGeneratorLocked: false,
+            isFormPasswordLocked: false
         };
 
         let clipboardClearTimer = null;
@@ -788,6 +869,7 @@
         let searchDebounceTimer = null;
         let pendingImportItems = null;
         let hiddenTimestamp = 0; // 離席時間測定用
+        let pendingAuthSuccessCallback = null; // 本人確認後の実行コールバック
 
         // 初期ロード
         window.addEventListener('DOMContentLoaded', async () => {
@@ -806,11 +888,8 @@
            1. iOS ITP（7日データ消去）警告バナー制御
            ========================================================================== */
         function checkItpStatus() {
-            // ホーム画面に追加されたPWA（standalone）なら制限対象外なので非表示
             const isStandalone = window.matchMedia('(display-mode: standalone)').matches || ('standalone' in navigator && navigator.standalone);
             const isDismissed = sessionStorage.getItem(STORAGE_KEY_ITP_DISMISSED);
-
-            // iOSデバイス（Safari）かつ通常ブラウザタブで開いている場合にバナーを表示
             const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 
             if (isIOS && !isStandalone && !isDismissed) {
@@ -827,25 +906,23 @@
            2. 暗号化ボールト管理
            ========================================================================== */
         
-        // パスワード文字列から非抽出のPBKDF2キーマテリアルを生成
         async function importKeyMaterial(masterPassword) {
             const enc = new TextEncoder();
             return await crypto.subtle.importKey(
                 'raw',
                 enc.encode(masterPassword),
                 'PBKDF2',
-                false, // 外部抽出不可
+                false,
                 ['deriveKey']
             );
         }
 
-        // 任意のsaltからAES-GCM鍵を動的導出（クロスデバイス復号を保証）
         async function deriveKeyFromMaterial(keyMaterial, salt) {
             return await crypto.subtle.deriveKey(
                 {
                     name: 'PBKDF2',
                     salt: salt,
-                    iterations: 600000, // OWASP推奨基準
+                    iterations: 600000,
                     hash: 'SHA-256'
                 },
                 keyMaterial,
@@ -855,7 +932,6 @@
             );
         }
 
-        // Base64ヘルパー
         function bufToB64(buffer) {
             let binary = '';
             const bytes = new Uint8Array(buffer);
@@ -936,7 +1012,6 @@
                 strengthBox.classList.add('hidden');
                 passInput.autocomplete = 'current-password';
 
-                // Face ID 登録済みの場合はクイック解錠ボタンを表示
                 if (bioCredential && window.PublicKeyCredential) {
                     bioSection.classList.remove('hidden');
                 } else {
@@ -993,7 +1068,6 @@
 
             errEl.classList.add('hidden');
 
-            // 初回セットアップ処理
             if (!storedVaultRaw) {
                 if (!pass || pass.length < 12) {
                     errEl.querySelector('span').innerText = 'マスターパスワードは12文字以上で入力してください';
@@ -1030,7 +1104,6 @@
                     appState.isLocked = false;
 
                     await persistVault();
-
                     localStorage.removeItem(STORAGE_KEY_LEGACY);
 
                     unlockSuccess();
@@ -1043,7 +1116,6 @@
                 return;
             }
 
-            // 既存ボールトの解錠処理
             try {
                 await unlockWithPassword(pass);
                 unlockSuccess();
@@ -1088,7 +1160,6 @@
             renderItems();
         }
 
-        // ロック処理（DOMテキスト・検索窓の完全初期化）
         function lockVault() {
             appState.cryptoKey = null;
             appState.keyMaterial = null;
@@ -1102,6 +1173,7 @@
             closeImportModal();
             closeDeleteModal();
             closeBiometricModal();
+            closeActionAuthModal();
 
             // フォームおよび生成結果クリア
             document.getElementById('itemForm').reset();
@@ -1111,7 +1183,11 @@
             document.getElementById('genResultOutput').value = '';
             document.getElementById('itemsContainer').innerHTML = '';
 
-            // 詳細モーダルテキストの完全消去
+            // ロック状態フラグリセット
+            setGeneratorLockState(false);
+            setFormPasswordLockState(false);
+
+            // 詳細モーダルテキスト初期化
             document.getElementById('detailTitle').innerText = 'サービス名';
             document.getElementById('detailUsername').innerText = '--';
             document.getElementById('detailPassword').innerText = '••••••••••••';
@@ -1125,7 +1201,7 @@
             document.getElementById('detailCreatedDate').innerText = '登録: ----/--/--';
             document.getElementById('detailUpdatedDate').innerText = '';
 
-            // 検索ボックスのクリア
+            // 検索ボックスクリア
             document.getElementById('searchInput').value = '';
             document.getElementById('clearSearchBtn').classList.add('hidden');
 
@@ -1183,10 +1259,9 @@
         }
 
         /* ==========================================================================
-           3. Face ID / Touch ID (WebAuthn 生体認証) 連携モジュール
+           3. Face ID / WebAuthn 生体認証 & センシティブ操作認証
            ========================================================================== */
 
-        // 端末生体認証用の固定派生ソルト
         const BIO_SALT = new Uint8Array([87, 101, 98, 65, 117, 116, 104, 110, 75, 101, 121, 86, 97, 117, 108, 116]);
 
         function openBiometricModal() {
@@ -1205,7 +1280,6 @@
             document.getElementById('bioMasterPassInput').value = '';
         }
 
-        // Face ID 認証器の登録処理
         async function registerBiometricCredential() {
             const pass = document.getElementById('bioMasterPassInput').value;
             if (!pass) {
@@ -1218,7 +1292,6 @@
                 return;
             }
 
-            // まずマスターパスワードが現在有効かを検証
             try {
                 const storedVaultRaw = localStorage.getItem(STORAGE_KEY_VAULT);
                 const vault = JSON.parse(storedVaultRaw);
@@ -1232,7 +1305,6 @@
             }
 
             try {
-                // WebAuthn パスキー（Platform Authenticator）の生成
                 const challenge = crypto.getRandomValues(new Uint8Array(32));
                 const userId = crypto.getRandomValues(new Uint8Array(16));
 
@@ -1246,11 +1318,11 @@
                             displayName: "KeyVault Owner"
                         },
                         pubKeyCredParams: [
-                            { type: "public-key", alg: -7 },   // ES256
-                            { type: "public-key", alg: -257 }  // RS256
+                            { type: "public-key", alg: -7 },
+                            { type: "public-key", alg: -257 }
                         ],
                         authenticatorSelection: {
-                            authenticatorAttachment: "platform", // Face ID / Touch ID 必須
+                            authenticatorAttachment: "platform",
                             userVerification: "required",
                             residentKey: "preferred"
                         },
@@ -1261,7 +1333,6 @@
                 const credential = await navigator.credentials.create(createOptions);
                 if (!credential) throw new Error('生体認証の登録がキャンセルされました');
 
-                // 生体認証検証済みの証跡として、端末内固有シークレットでマスターパスワードを暗号化保存
                 const deviceSecret = crypto.getRandomValues(new Uint8Array(32));
                 const deviceKm = await crypto.subtle.importKey('raw', deviceSecret, 'PBKDF2', false, ['deriveKey']);
                 const deviceKey = await crypto.subtle.deriveKey(
@@ -1283,7 +1354,7 @@
 
                 localStorage.setItem(STORAGE_KEY_BIO, JSON.stringify(bioRecord));
 
-                openBiometricModal(); // UI更新
+                openBiometricModal();
                 checkExistingVault();
                 showToast('Face ID / 生体認証を登録しました');
             } catch (err) {
@@ -1292,7 +1363,6 @@
             }
         }
 
-        // Face ID によるワンタッチ解錠処理
         async function handleBiometricUnlock() {
             const bioRaw = localStorage.getItem(STORAGE_KEY_BIO);
             if (!bioRaw) {
@@ -1317,11 +1387,9 @@
                     }
                 };
 
-                // Face ID 認証ダイアログの表示
                 const assertion = await navigator.credentials.get(getOptions);
                 if (!assertion) throw new Error('生体認証がキャンセルされました');
 
-                // 生体認証合格時のみマスターパスワードを復号して通常解錠
                 const deviceSecret = b64ToBuf(bioRecord.deviceSecret);
                 const deviceKm = await crypto.subtle.importKey('raw', deviceSecret, 'PBKDF2', false, ['deriveKey']);
                 const deviceKey = await crypto.subtle.deriveKey(
@@ -1350,16 +1418,165 @@
             showToast('Face ID 連携を解除しました');
         }
 
+        // v2.4 センシティブ操作認証ダイアログ（Face ID または パスワード）
+        function requestActionAuthentication(descText, onSuccessCallback) {
+            pendingAuthSuccessCallback = onSuccessCallback;
+            document.getElementById('actionAuthDesc').innerText = descText || 'パスワードを変更するにはロック解除が必要です';
+            document.getElementById('actionAuthPassInput').value = '';
+            document.getElementById('actionAuthError').classList.add('hidden');
+
+            const hasBio = !!localStorage.getItem(STORAGE_KEY_BIO) && !!window.PublicKeyCredential;
+            document.getElementById('actionBioBtnContainer').classList.toggle('hidden', !hasBio);
+
+            document.getElementById('actionAuthModal').classList.remove('hidden');
+            document.getElementById('actionAuthModal').classList.add('flex');
+        }
+
+        function closeActionAuthModal() {
+            document.getElementById('actionAuthModal').classList.add('hidden');
+            document.getElementById('actionAuthModal').classList.remove('flex');
+            pendingAuthSuccessCallback = null;
+            document.getElementById('actionAuthPassInput').value = '';
+        }
+
+        async function executeActionBiometricUnlock() {
+            const bioRaw = localStorage.getItem(STORAGE_KEY_BIO);
+            if (!bioRaw) return;
+
+            try {
+                const bioRecord = JSON.parse(bioRaw);
+                const credId = b64ToBuf(bioRecord.credentialId);
+                const challenge = crypto.getRandomValues(new Uint8Array(32));
+
+                const assertion = await navigator.credentials.get({
+                    publicKey: {
+                        challenge: challenge,
+                        allowCredentials: [{ id: credId, type: 'public-key' }],
+                        userVerification: "required",
+                        timeout: 60000
+                    }
+                });
+
+                if (assertion) {
+                    const callback = pendingAuthSuccessCallback;
+                    closeActionAuthModal();
+                    if (typeof callback === 'function') {
+                        callback();
+                    }
+                }
+            } catch (err) {
+                console.warn("Action bio failed:", err);
+                showToast('Face ID 認証がキャンセルされました。パスワードで解除してください', true);
+            }
+        }
+
+        async function handleActionPasswordAuth(e) {
+            e.preventDefault();
+            const passInput = document.getElementById('actionAuthPassInput');
+            const errEl = document.getElementById('actionAuthError');
+            const password = passInput.value;
+
+            try {
+                const storedVaultRaw = localStorage.getItem(STORAGE_KEY_VAULT);
+                const vault = JSON.parse(storedVaultRaw);
+                const salt = (typeof vault.salt === 'string') ? b64ToBuf(vault.salt) : new Uint8Array(vault.salt);
+                const km = await importKeyMaterial(password);
+                const testKey = await deriveKeyFromMaterial(km, salt);
+                await decryptData(vault.payload, testKey);
+
+                const callback = pendingAuthSuccessCallback;
+                closeActionAuthModal();
+                if (typeof callback === 'function') {
+                    callback();
+                }
+            } catch (err) {
+                errEl.classList.remove('hidden');
+            }
+        }
+
         /* ==========================================================================
-           4. サニタイズ & 暗号論的擬似乱数 (先祖返り防止 & 有効期限チェック)
+           4. v2.4 誤操作防止ロック＆パスワード生成制御
+           ========================================================================== */
+
+        // パスワード自動生成モーダルでの誤操作防止ロック制御
+        function setGeneratorLockState(isLocked) {
+            appState.isGeneratorLocked = isLocked;
+            const badge = document.getElementById('genLockBadge');
+            const toggleBtn = document.getElementById('genLockToggleBtn');
+            const statusText = document.getElementById('genLockStatusText');
+            const refreshBtn = document.getElementById('genRefreshBtn');
+            const configSection = document.getElementById('genConfigSection');
+
+            badge.classList.toggle('hidden', !isLocked);
+
+            if (isLocked) {
+                toggleBtn.className = 'px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-xs bg-amber-500 hover:bg-amber-600 text-white';
+                toggleBtn.innerHTML = '<i class="fa-solid fa-lock-open"></i><span>ロック解除（認証）</span>';
+                statusText.innerText = '🔒 パスワードは保護されています';
+                refreshBtn.disabled = true;
+                refreshBtn.classList.add('opacity-30', 'cursor-not-allowed');
+                configSection.classList.add('opacity-40', 'pointer-events-none');
+            } else {
+                toggleBtn.className = 'px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-xs bg-slate-800 hover:bg-slate-900 text-white';
+                toggleBtn.innerHTML = '<i class="fa-solid fa-lock"></i><span>ロックして保護</span>';
+                statusText.innerText = 'パスワードを確定して保護';
+                refreshBtn.disabled = false;
+                refreshBtn.classList.remove('opacity-30', 'cursor-not-allowed');
+                configSection.classList.remove('opacity-40', 'pointer-events-none');
+            }
+        }
+
+        function toggleGeneratorLock() {
+            if (!appState.isGeneratorLocked) {
+                setGeneratorLockState(true);
+                showToast('パスワードを誤操作防止ロックしました');
+            } else {
+                requestActionAuthentication('生成パスワードを変更するにはロック解除が必要です', () => {
+                    setGeneratorLockState(false);
+                    showToast('ロックを解除しました。パスワードを変更できます');
+                });
+            }
+        }
+
+        // サービス登録・編集フォームでのパスワード上書き防止ロック制御
+        function setFormPasswordLockState(isLocked) {
+            appState.isFormPasswordLocked = isLocked;
+            const passInput = document.getElementById('itemPassword');
+            const lockBadge = document.getElementById('formPwLockBadge');
+            const unlockBtn = document.getElementById('formUnlockPwBtn');
+            const generateBtn = document.getElementById('formGeneratePwBtn');
+
+            if (isLocked) {
+                passInput.readOnly = true;
+                passInput.classList.add('bg-slate-100', 'cursor-not-allowed');
+                lockBadge.classList.remove('hidden');
+                unlockBtn.classList.remove('hidden');
+                generateBtn.classList.add('hidden');
+            } else {
+                passInput.readOnly = false;
+                passInput.classList.remove('bg-slate-100', 'cursor-not-allowed');
+                lockBadge.classList.add('hidden');
+                unlockBtn.classList.add('hidden');
+                generateBtn.classList.remove('hidden');
+            }
+        }
+
+        function requestFormPasswordUnlock() {
+            requestActionAuthentication('パスワードを変更・上書きするにはロック解除が必要です', () => {
+                setFormPasswordLockState(false);
+                showToast('パスワードの保護を解除しました。変更が可能です');
+                document.getElementById('itemPassword').focus();
+            });
+        }
+
+        /* ==========================================================================
+           5. サニタイズ & 暗号論的擬似乱数 (CSPRNG)
            ========================================================================== */
 
         function sanitizeItem(raw) {
             const cats = CATEGORIES.map(c => c.id);
             const s = v => (typeof v === 'string' ? v : '');
             const createdAt = Number.isFinite(raw.createdAt) ? raw.createdAt : Date.now();
-            
-            // updatedAt が未定義の場合、createdAt または 0 を設定し先祖返り上書きを防止
             const updatedAt = Number.isFinite(raw.updatedAt) 
                 ? raw.updatedAt 
                 : (Number.isFinite(raw.createdAt) ? raw.createdAt : 0);
@@ -1393,6 +1610,7 @@
         }
 
         function selectLength(len) {
+            if (appState.isGeneratorLocked) return;
             appState.currentLength = len;
             [12, 16, 20].forEach(l => {
                 const btn = document.getElementById(`lenBtn-${l}`);
@@ -1409,6 +1627,8 @@
         }
 
         function generateRandomPassword() {
+            if (appState.isGeneratorLocked) return;
+
             const length = appState.currentLength;
             const useUpper = document.getElementById('optUpper').checked;
             const useLower = document.getElementById('optLower').checked;
@@ -1473,10 +1693,13 @@
         }
 
         function insertGeneratedPasswordIntoForm() {
+            if (appState.isFormPasswordLocked) return;
             selectLength(20);
             const pass = document.getElementById('genResultOutput').value;
             document.getElementById('itemPassword').value = pass;
-            showToast('20桁の最強CSPRNGパスワードを自動セットしました');
+            // 生成したパスワードを即座に保護ロック
+            setFormPasswordLockState(true);
+            showToast('20桁パスワードをセットし誤操作防止ロックしました');
         }
 
         function applyGeneratedPasswordToForm() {
@@ -1486,15 +1709,15 @@
             const itemModal = document.getElementById('itemModal');
             if (!itemModal.classList.contains('hidden')) {
                 document.getElementById('itemPassword').value = pass;
+                setFormPasswordLockState(true);
                 closeGeneratorModal();
-                showToast('パスワード入力欄に適用しました');
+                showToast('パスワード入力欄に適用し保護ロックしました');
             } else {
                 copyToClipboard(pass, '生成パスワードをコピーしました（30秒後に消去）');
                 closeGeneratorModal();
             }
         }
 
-        // クレジットカード有効期限の過去判定
         function checkCardExpiryWarning(expiryStr) {
             const warnEl = document.getElementById('cardExpiryWarning');
             if (!/^\d{2}\/\d{2}$/.test(expiryStr)) {
@@ -1523,7 +1746,7 @@
         }
 
         /* ==========================================================================
-           5. UI・イベント委譲 & レンダリング
+           6. UI・イベント委譲 & レンダリング
            ========================================================================== */
 
         function setupEventDelegation() {
@@ -1570,6 +1793,7 @@
                     closeImportModal();
                     closeDeleteModal();
                     closeBiometricModal();
+                    closeActionAuthModal();
                 }
             });
 
@@ -1685,7 +1909,7 @@
         }
 
         /* ==========================================================================
-           6. 詳細モーダル・セキュア表示
+           7. 詳細モーダル・セキュア表示
            ========================================================================== */
 
         let currentDetailItem = null;
@@ -1821,7 +2045,7 @@
         }
 
         /* ==========================================================================
-           7. フォーム操作 & クレジットカード判別
+           8. フォーム操作 & クレジットカード判別
            ========================================================================== */
 
         function openItemModal(itemId = null) {
@@ -1835,6 +2059,8 @@
                 <span>新規サービスの登録</span>
             `;
             document.getElementById('saveBtnText').innerText = '暗号化して保存';
+
+            setFormPasswordLockState(false);
 
             const defaultCat = (appState.selectedCategory !== 'all') ? appState.selectedCategory : 'sns';
             const radio = document.querySelector(`input[name="itemCategory"][value="${defaultCat}"]`);
@@ -1857,6 +2083,9 @@
             document.getElementById('itemUsername').value = item.username || '';
             document.getElementById('itemPassword').value = item.password || '';
             document.getElementById('itemNotes').value = item.notes || '';
+
+            // 編集時はパスワード欄を自動で保護ロック
+            setFormPasswordLockState(true);
 
             const radio = document.querySelector(`input[name="itemCategory"][value="${item.category}"]`);
             if (radio) {
@@ -1884,6 +2113,7 @@
         function closeItemModal() {
             document.getElementById('itemModal').classList.add('hidden');
             document.getElementById('itemModal').classList.remove('flex');
+            setFormPasswordLockState(false);
         }
 
         function onCategoryRadioChange(catVal) {
@@ -2042,7 +2272,7 @@
         }
 
         /* ==========================================================================
-           8. エクスポート & インポート
+           9. エクスポート & インポート
            ========================================================================== */
 
         function openExportModal() {
@@ -2078,7 +2308,6 @@
 
             const blob = new Blob([jsonString], { type: 'application/json' });
 
-            // iOS Safari / PWA でファイル名維持のため Web Share API を優先
             if (navigator.share && navigator.canShare) {
                 try {
                     const file = new File([blob], fileName, { type: 'application/json' });
@@ -2096,7 +2325,6 @@
                 }
             }
 
-            // フォールバック: Blob URL ダウンロード
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
@@ -2205,7 +2433,7 @@
         }
 
         /* ==========================================================================
-           9. セキュア・クリップボード & ヘルパー
+           10. クリップボード & ヘルパー
            ========================================================================== */
 
         async function copyToClipboard(text, successMsg = 'コピーしました') {
@@ -2251,12 +2479,14 @@
         function openGeneratorModal() {
             document.getElementById('generatorModal').classList.remove('hidden');
             document.getElementById('generatorModal').classList.add('flex');
+            setGeneratorLockState(false);
             generateRandomPassword();
         }
 
         function closeGeneratorModal() {
             document.getElementById('generatorModal').classList.add('hidden');
             document.getElementById('generatorModal').classList.remove('flex');
+            setGeneratorLockState(false);
         }
 
         function toggleInputPasswordVisibility(inputId, btn) {
