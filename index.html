@@ -4,11 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>KeyVault - ID & パスワード統合管理</title>
+    <!-- ファビコン設定 (モダンブラウザ用 SVG Data-URI) -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%236366f1'/%3E%3Cstop offset='100%25' stop-color='%234338ca'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='16' fill='url(%23g)'/%3E%3Cpath d='M32 10 L48 16 V29 C48 40.5 32 50 32 50 C32 50 16 40.5 16 29 V16 Z' fill='%23ffffff' fill-opacity='0.25'/%3E%3Ccircle cx='32' cy='25' r='5' fill='%23ffffff'/%3E%3Cpath d='M30 28 h4 v13 h-4 z' fill='%23ffffff'/%3E%3Cpath d='M32 33 h5 v3 h-5 z' fill='%23ffffff'/%3E%3Cpath d='M32 38 h4 v3 h-4 z' fill='%23ffffff'/%3E%3C/svg%3E">
+    <!-- iOS ホーム画面追加用アプリアイコン (Apple Touch Icon) -->
+    <link rel="apple-touch-icon" id="appleTouchIcon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Cdefs%3E%3ClinearGradient id='bg' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%234f46e5'/%3E%3Cstop offset='100%25' stop-color='%23312e81'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='180' height='180' rx='40' fill='url(%23bg)'/%3E%3Cpath d='M90 28 L136 45 V84 C136 116 90 144 90 144 C90 144 44 116 44 84 V45 Z' fill='%23ffffff' fill-opacity='0.25'/%3E%3Ccircle cx='90' cy='72' r='14' fill='%23ffffff'/%3E%3Cpath d='M84 82 h12 v36 h-12 z' fill='%23ffffff'/%3E%3Cpath d='M90 96 h14 v8 h-14 z' fill='%23ffffff'/%3E%3Cpath d='M90 110 h11 v8 h-11 z' fill='%23ffffff'/%3E%3C/svg%3E">
     <!-- iOS / PWA 対応メタタグ -->
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="KeyVault">
-    <meta name="theme-color" content="#0f172a">
+    <meta name="theme-color" content="#ffffff">
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -19,6 +23,7 @@
                         brand: {
                             50: '#eef2ff',
                             100: '#e0e7ff',
+                            200: '#c7d2fe',
                             500: '#6366f1',
                             600: '#4f46e5',
                             700: '#4338ca',
@@ -38,8 +43,8 @@
     <style>
         body {
             font-family: 'Inter', 'Noto Sans JP', sans-serif;
-            background-color: #0f172a;
-            color: #f8fafc;
+            background-color: #f8fafc;
+            color: #1e293b;
             padding-top: env(safe-area-inset-top);
             padding-bottom: env(safe-area-inset-bottom);
         }
@@ -49,60 +54,65 @@
             height: 8px;
         }
         ::-webkit-scrollbar-track {
-            background: #1e293b;
+            background: #f1f5f9;
         }
         ::-webkit-scrollbar-thumb {
-            background: #334155;
+            background: #cbd5e1;
             border-radius: 4px;
         }
         ::-webkit-scrollbar-thumb:hover {
-            background: #475569;
+            background: #94a3b8;
         }
         .card-glass {
-            background: rgba(30, 41, 59, 0.7);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 4px 16px -2px rgba(15, 23, 42, 0.05);
+        }
+        .card-glass:hover {
+            box-shadow: 0 10px 25px -4px rgba(79, 70, 229, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.03);
         }
         .credit-card-preview {
-            background: linear-gradient(135deg, #312e81 0%, #1e1b4b 50%, #0f172a 100%);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.2);
+            background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4338ca 100%);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 12px 28px -6px rgba(49, 46, 129, 0.35);
         }
     </style>
 </head>
-<body class="min-h-screen flex flex-col antialiased selection:bg-brand-500 selection:text-white">
+<body class="min-h-screen flex flex-col antialiased selection:bg-brand-500 selection:text-white bg-slate-50 text-slate-800">
 
-    <header class="border-b border-slate-800 bg-slate-900/80 sticky top-0 z-30 backdrop-blur-md">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-            <div class="flex items-center space-x-3">
-                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-400 flex items-center justify-center text-white shadow-lg shadow-brand-500/20">
-                    <i class="fa-solid fa-shield-halved text-lg"></i>
+    <header class="border-b border-slate-200 bg-white/95 sticky top-0 z-30 backdrop-blur-md shadow-xs">
+        <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2">
+            <div class="flex items-center space-x-2 sm:space-x-3 min-w-0">
+                <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-500 flex items-center justify-center text-white shadow-md shadow-brand-500/25 shrink-0">
+                    <i class="fa-solid fa-shield-halved text-sm sm:text-lg"></i>
                 </div>
-                <div>
-                    <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
-                        KeyVault
-                        <span class="text-xs px-2 py-0.5 rounded-full bg-brand-500/20 text-brand-300 border border-brand-500/30">Secure</span>
+                <div class="min-w-0">
+                    <h1 class="text-base sm:text-lg font-bold tracking-tight text-slate-900 flex items-center gap-1.5 sm:gap-2">
+                        <span>KeyVault</span>
+                        <span class="hidden sm:inline-block text-xs px-2 py-0.5 rounded-full bg-brand-50 text-brand-700 border border-brand-200 font-semibold">Secure</span>
+                        <span class="app-version-badge text-[10px] font-mono font-medium text-slate-400 bg-slate-100/80 px-1.5 py-0.5 rounded-md border border-slate-200 shrink-0">v1.5</span>
                     </h1>
-                    <p class="text-xs text-slate-400">ID・パスワード・カード一括管理</p>
+                    <p class="hidden sm:block text-xs text-slate-500 truncate">ID・パスワード・カード一括管理</p>
                 </div>
             </div>
 
-            <div class="flex items-center space-x-3">
+            <div class="flex items-center space-x-1.5 sm:space-x-3 shrink-0">
                 <!-- パスワード生成器クイック起動ボタン -->
-                <button onclick="openGeneratorModal()" class="px-3 py-2 text-sm font-medium rounded-xl text-slate-300 hover:text-white hover:bg-slate-800 transition border border-slate-700 flex items-center gap-2">
-                    <i class="fa-solid fa-key text-amber-400"></i>
+                <button onclick="openGeneratorModal()" title="パスワード自動生成" class="p-2 sm:px-3 sm:py-2 text-xs sm:text-sm font-medium rounded-xl text-slate-700 hover:text-slate-900 bg-white hover:bg-slate-100 transition border border-slate-300 shadow-xs flex items-center gap-1.5">
+                    <i class="fa-solid fa-key text-amber-500 text-sm"></i>
                     <span class="hidden sm:inline">PW自動生成</span>
                 </button>
                 <!-- 新規登録ボタン -->
-                <button onclick="openItemModal()" class="px-4 py-2 text-sm font-medium rounded-xl text-white bg-brand-600 hover:bg-brand-500 transition shadow-lg shadow-brand-600/30 flex items-center gap-2">
-                    <i class="fa-solid fa-plus"></i>
-                    <span>サービスを追加</span>
+                <button onclick="openItemModal()" class="px-2.5 sm:px-4 py-2 text-xs sm:text-sm font-semibold rounded-xl text-white bg-brand-600 hover:bg-brand-700 transition shadow-md shadow-brand-600/25 flex items-center gap-1.5 shrink-0">
+                    <i class="fa-solid fa-plus text-xs sm:text-sm"></i>
+                    <span class="inline sm:hidden">追加</span>
+                    <span class="hidden sm:inline">サービスを追加</span>
                 </button>
             </div>
         </div>
     </header>
 
-    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-7 space-y-6">
         
         <!-- 検索・統計・アクションバー -->
         <div class="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
@@ -110,18 +120,18 @@
             <div class="relative flex-1 max-w-lg">
                 <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
                 <input type="text" id="searchInput" oninput="renderItems()" placeholder="サービス名、ID、URLで検索..." 
-                       class="w-full bg-slate-800/90 border border-slate-700 text-white rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 placeholder-slate-500 transition">
+                       class="w-full bg-white border border-slate-300 text-slate-900 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 placeholder-slate-400 shadow-xs transition">
             </div>
 
             <!-- 件数情報 -->
-            <div class="flex items-center justify-between md:justify-end gap-3 text-sm text-slate-400">
-                <span id="itemCountBadge" class="bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700/60 font-medium text-slate-300">
+            <div class="flex items-center justify-between md:justify-end gap-3 text-sm text-slate-500">
+                <span id="itemCountBadge" class="bg-white px-3.5 py-1.5 rounded-xl border border-slate-200 font-semibold text-slate-700 shadow-xs">
                     登録数: 0 件
                 </span>
-                <button onclick="exportData()" title="データ書き出し (JSON)" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition">
+                <button onclick="exportData()" title="データ書き出し (JSON)" class="p-2.5 rounded-xl bg-white hover:bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-300 shadow-xs transition">
                     <i class="fa-solid fa-download"></i>
                 </button>
-                <label title="データ読み込み (JSON)" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 cursor-pointer transition">
+                <label title="データ読み込み (JSON)" class="p-2.5 rounded-xl bg-white hover:bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-300 shadow-xs cursor-pointer transition">
                     <i class="fa-solid fa-upload"></i>
                     <input type="file" id="importFileInput" onchange="importData(event)" accept=".json" class="hidden">
                 </label>
@@ -129,39 +139,169 @@
         </div>
 
         <!-- カテゴリータブ -->
-        <div class="border-b border-slate-800 flex overflow-x-auto gap-2 pb-2 scrollbar-none" id="categoryTabs">
-            <!-- JSで動的生成、または静的バインディング -->
+        <div class="border-b border-slate-200 flex overflow-x-auto gap-2 pb-2 scrollbar-none" id="categoryTabs">
+            <!-- JSで動的生成 -->
         </div>
 
         <!-- 登録アイテム一覧表示グリッド -->
-        <div id="itemsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div id="itemsContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-4">
             <!-- JSでアイテムカードを出力 -->
         </div>
 
         <!-- 空表示ステート -->
-        <div id="emptyState" class="hidden text-center py-16 px-4">
-            <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-slate-800/80 border border-slate-700 flex items-center justify-center text-slate-500 text-2xl">
+        <div id="emptyState" class="hidden text-center py-16 px-4 bg-white rounded-2xl border border-dashed border-slate-300">
+            <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-brand-50 border border-brand-100 flex items-center justify-center text-brand-500 text-2xl">
                 <i class="fa-regular fa-folder-open"></i>
             </div>
-            <h3 class="text-base font-semibold text-slate-300 mb-1">登録されている情報がありません</h3>
+            <h3 class="text-base font-semibold text-slate-800 mb-1">登録されている情報がありません</h3>
             <p class="text-sm text-slate-500 mb-5 max-w-sm mx-auto">「サービスを追加」ボタンからウェブサイト、SNS、銀行、クレジットカード情報を登録してください。</p>
-            <button onclick="openItemModal()" class="px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white rounded-xl text-sm font-medium transition shadow-md shadow-brand-500/20">
+            <button onclick="openItemModal()" class="px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-sm font-semibold transition shadow-md shadow-brand-500/20">
                 <i class="fa-solid fa-plus mr-1"></i> 新規サービスを登録
             </button>
         </div>
 
     </main>
 
+    <!-- 画面端のフッター & バージョン表示 -->
+    <footer class="mt-auto border-t border-slate-200/80 bg-white/70 backdrop-blur-xs py-3 px-4 sm:px-6">
+        <div class="max-w-7xl mx-auto flex items-center justify-between text-xs text-slate-400">
+            <div class="flex items-center gap-1.5">
+                <i class="fa-solid fa-lock text-[10px] text-slate-400"></i>
+                <span>KeyVault Local Secure Storage</span>
+            </div>
+            <div class="flex items-center gap-1 font-mono text-[11px] text-slate-400 hover:text-slate-600 transition">
+                <span>Version:</span>
+                <span class="app-version-badge font-semibold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">v1.5</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- サービス詳細確認モーダル（サービス名タップ時に開く） -->
+    <div id="detailModal" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm hidden items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white border border-slate-200 w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden my-6 animate-in fade-in zoom-in-95 duration-200">
+            <!-- 詳細モーダルヘッダー -->
+            <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/70">
+                <div class="flex items-center gap-3 min-w-0 pr-3">
+                    <div id="detailCatIcon" class="w-10 h-10 rounded-xl bg-brand-50 border border-brand-100 flex items-center justify-center text-brand-600 shrink-0 shadow-xs">
+                        <i class="fa-solid fa-globe text-base"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <h3 id="detailTitle" class="text-base font-bold text-slate-900 truncate">サービス名</h3>
+                        <div class="flex items-center gap-2 mt-0.5">
+                            <span id="detailCategoryBadge" class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
+                                カテゴリー
+                            </span>
+                            <a id="detailUrlLink" href="#" target="_blank" rel="noopener noreferrer" class="hidden text-xs text-brand-600 hover:text-brand-700 font-medium items-center gap-1">
+                                <span>サイトを開く</span>
+                                <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <button onclick="closeDetailModal()" class="text-slate-400 hover:text-slate-700 p-1.5 rounded-lg hover:bg-slate-100 transition">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <!-- 詳細モーダル本文 -->
+            <div class="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+                <!-- ID / アカウント名 -->
+                <div class="bg-slate-50 rounded-xl p-3.5 border border-slate-200 flex items-center justify-between">
+                    <div class="min-w-0 pr-2">
+                        <span class="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">ユーザーID / メールアドレス</span>
+                        <span id="detailUsername" class="text-sm font-semibold text-slate-900 font-mono truncate block select-all">--</span>
+                    </div>
+                    <button id="copyDetailIdBtn" onclick="copyDetailUsername()" title="IDをコピー" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white hover:bg-brand-50 text-slate-700 hover:text-brand-600 border border-slate-300 hover:border-brand-300 shadow-xs transition flex items-center gap-1.5 shrink-0">
+                        <i class="fa-regular fa-copy"></i>
+                        <span>コピー</span>
+                    </button>
+                </div>
+
+                <!-- パスワード -->
+                <div class="bg-slate-50 rounded-xl p-3.5 border border-slate-200 flex items-center justify-between">
+                    <div class="min-w-0 pr-2 flex-1">
+                        <span class="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">パスワード</span>
+                        <span id="detailPassword" class="text-sm font-bold text-slate-900 font-mono tracking-wider truncate block" data-masked="true">••••••••••••</span>
+                    </div>
+                    <div class="flex items-center gap-1.5 shrink-0">
+                        <button type="button" onclick="toggleDetailPasswordVisibility()" class="p-2 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 transition" title="表示/非表示">
+                            <i id="detailPwEyeIcon" class="fa-regular fa-eye text-sm"></i>
+                        </button>
+                        <button type="button" onclick="copyDetailPassword()" title="パスワードをコピー" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-brand-600 hover:bg-brand-700 text-white transition shadow-sm flex items-center gap-1.5">
+                            <i class="fa-regular fa-copy"></i>
+                            <span>コピー</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- クレジットカード情報（カード登録時のみ表示） -->
+                <div id="detailCardContainer" class="hidden space-y-2.5">
+                    <div class="credit-card-preview rounded-2xl p-5 text-white space-y-3 relative overflow-hidden">
+                        <div class="flex justify-between items-center text-xs opacity-90">
+                            <span id="detailCardBrand" class="tracking-widest font-mono font-bold">CREDIT CARD</span>
+                            <i class="fa-solid fa-wifi text-xs rotate-90 text-amber-300"></i>
+                        </div>
+                        <div id="detailCardPan" class="font-mono text-xl tracking-widest font-extrabold text-amber-300 select-all drop-shadow">
+                            •••• •••• •••• ••••
+                        </div>
+                        <div class="flex justify-between items-center text-xs font-mono text-slate-200 pt-1 border-t border-white/20">
+                            <div>
+                                <span class="text-[9px] uppercase tracking-wider block text-slate-300">Card Holder</span>
+                                <span id="detailCardHolder" class="uppercase font-bold tracking-wide">--</span>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-[9px] uppercase tracking-wider block text-slate-300">Expires</span>
+                                <span id="detailCardExpiry" class="font-bold">--/--</span>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="button" onclick="copyDetailCardNumber()" class="w-full py-2.5 rounded-xl text-xs font-semibold text-brand-700 bg-brand-50 hover:bg-brand-100 border border-brand-200 transition flex items-center justify-center gap-2">
+                        <i class="fa-regular fa-copy"></i>
+                        <span>カード番号をコピー</span>
+                    </button>
+                </div>
+
+                <!-- 備考 / メモ -->
+                <div id="detailNotesContainer" class="hidden">
+                    <span class="text-[10px] uppercase font-bold text-slate-400 block tracking-wider mb-1">備考・メモ</span>
+                    <p id="detailNotes" class="text-xs text-slate-700 bg-slate-50 p-3.5 rounded-xl border border-slate-200 leading-relaxed whitespace-pre-wrap"></p>
+                </div>
+
+                <!-- 登録日時情報 -->
+                <div class="text-right text-[11px] text-slate-400 pt-1">
+                    <span id="detailDateInfo">登録日: ----/--/--</span>
+                </div>
+            </div>
+
+            <!-- 詳細モーダルフッター操作ボタン -->
+            <div class="px-6 py-3.5 border-t border-slate-200 bg-slate-50/70 flex items-center justify-between">
+                <button type="button" onclick="deleteFromDetailModal()" class="px-3.5 py-2 text-xs font-semibold text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-xl transition border border-rose-200 flex items-center gap-1.5">
+                    <i class="fa-solid fa-trash-can"></i>
+                    <span>削除</span>
+                </button>
+                <div class="flex items-center gap-2">
+                    <button type="button" onclick="closeDetailModal()" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-800 rounded-xl hover:bg-slate-100 transition">
+                        閉じる
+                    </button>
+                    <button type="button" onclick="editFromDetailModal()" class="px-4 py-2 text-xs font-semibold text-white bg-brand-600 hover:bg-brand-700 rounded-xl transition shadow-sm shadow-brand-600/30 flex items-center gap-1.5">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                        <span>編集する</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- 新規登録・編集モーダル -->
-    <div id="itemModal" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm hidden items-center justify-center p-4 overflow-y-auto">
-        <div class="bg-slate-900 border border-slate-800 w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden my-8 animate-in fade-in zoom-in-95 duration-200">
+    <div id="itemModal" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm hidden items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white border border-slate-200 w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden my-8 animate-in fade-in zoom-in-95 duration-200">
             <!-- モーダルヘッダー -->
-            <div class="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-800/40">
-                <h3 id="modalTitle" class="text-base font-bold text-white flex items-center gap-2">
-                    <i class="fa-solid fa-file-pen text-brand-400"></i>
+            <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/70">
+                <h3 id="modalTitle" class="text-base font-bold text-slate-900 flex items-center gap-2">
+                    <i class="fa-solid fa-file-pen text-brand-600"></i>
                     <span>サービスの登録</span>
                 </h3>
-                <button onclick="closeItemModal()" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition">
+                <button onclick="closeItemModal()" class="text-slate-400 hover:text-slate-700 p-1 rounded-lg hover:bg-slate-100 transition">
                     <i class="fa-solid fa-xmark text-lg"></i>
                 </button>
             </div>
@@ -172,7 +312,7 @@
 
                 <!-- カテゴリ選択 -->
                 <div>
-                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">カテゴリー <span class="text-rose-400">*</span></label>
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">カテゴリー <span class="text-rose-500">*</span></label>
                     <div class="grid grid-cols-2 sm:grid-cols-5 gap-2" id="categoryRadioGroup">
                         <!-- JSでカテゴリーボタングループ生成 -->
                     </div>
@@ -181,35 +321,35 @@
                 <!-- サービス名 & URL -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">ウェブサイト / サービス名 <span class="text-rose-400">*</span></label>
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">ウェブサイト / サービス名 <span class="text-rose-500">*</span></label>
                         <input type="text" id="itemTitle" required placeholder="例: Amazon, X(Twitter), 三菱UFJ銀行"
-                               class="w-full bg-slate-800 border border-slate-700 text-white rounded-xl px-3.5 py-2 text-sm focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition">
+                               class="w-full bg-slate-50 border border-slate-300 text-slate-900 rounded-xl px-3.5 py-2 text-sm focus:outline-none focus:bg-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition">
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">サイトURL (任意)</label>
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">サイトURL (任意)</label>
                         <input type="url" id="itemUrl" placeholder="https://example.com"
-                               class="w-full bg-slate-800 border border-slate-700 text-white rounded-xl px-3.5 py-2 text-sm focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition">
+                               class="w-full bg-slate-50 border border-slate-300 text-slate-900 rounded-xl px-3.5 py-2 text-sm focus:outline-none focus:bg-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition">
                     </div>
                 </div>
 
                 <!-- ログインID & パスワード -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">ユーザーID / メールアドレス <span class="text-rose-400">*</span></label>
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">ユーザーID / メールアドレス <span class="text-rose-500">*</span></label>
                         <input type="text" id="itemUsername" required placeholder="user@example.com または ユーザー名"
-                               class="w-full bg-slate-800 border border-slate-700 text-white rounded-xl px-3.5 py-2 text-sm focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition">
+                               class="w-full bg-slate-50 border border-slate-300 text-slate-900 rounded-xl px-3.5 py-2 text-sm focus:outline-none focus:bg-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition">
                     </div>
                     <div>
                         <div class="flex items-center justify-between mb-1.5">
-                            <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider">パスワード <span class="text-rose-400">*</span></label>
-                            <button type="button" onclick="insertGeneratedPasswordIntoForm()" class="text-xs text-brand-400 hover:text-brand-300 font-medium flex items-center gap-1">
+                            <label class="text-xs font-bold text-slate-500 uppercase tracking-wider">パスワード <span class="text-rose-500">*</span></label>
+                            <button type="button" onclick="insertGeneratedPasswordIntoForm()" class="text-xs text-brand-600 hover:text-brand-700 font-semibold flex items-center gap-1">
                                 <i class="fa-solid fa-wand-magic-sparkles"></i> 自動生成
                             </button>
                         </div>
                         <div class="relative">
                             <input type="password" id="itemPassword" required placeholder="パスワードを入力"
-                                   class="w-full bg-slate-800 border border-slate-700 text-white rounded-xl pl-3.5 pr-10 py-2 text-sm focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition font-mono">
-                            <button type="button" onclick="togglePasswordVisibility('itemPassword', this)" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200">
+                                   class="w-full bg-slate-50 border border-slate-300 text-slate-900 rounded-xl pl-3.5 pr-10 py-2 text-sm focus:outline-none focus:bg-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition font-mono">
+                            <button type="button" onclick="togglePasswordVisibility('itemPassword', this)" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
                                 <i class="fa-regular fa-eye"></i>
                             </button>
                         </div>
@@ -217,34 +357,34 @@
                 </div>
 
                 <!-- クレジットカード専用セクション (カテゴリがカードの時のみ表示) -->
-                <div id="creditCardSection" class="p-4 rounded-xl bg-slate-800/70 border border-indigo-500/30 space-y-4">
-                    <div class="flex items-center justify-between border-b border-slate-700/60 pb-2.5">
-                        <span class="text-xs font-bold text-indigo-300 flex items-center gap-1.5 uppercase tracking-wider">
-                            <i class="fa-solid fa-credit-card text-indigo-400"></i> クレジットカード詳細 & AI OCR読取
+                <div id="creditCardSection" class="p-4 rounded-xl bg-indigo-50/50 border border-indigo-200 space-y-4">
+                    <div class="flex items-center justify-between border-b border-indigo-100 pb-2.5">
+                        <span class="text-xs font-bold text-indigo-900 flex items-center gap-1.5 uppercase tracking-wider">
+                            <i class="fa-solid fa-credit-card text-brand-600"></i> クレジットカード詳細 & AI OCR読取
                         </span>
-                        <span class="text-[11px] px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-medium">
+                        <span class="text-[11px] px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 border border-indigo-200 font-semibold">
                             Gemini 3 Flash 読取対応
                         </span>
                     </div>
 
                     <!-- 画像アップロード & AI OCR -->
                     <div>
-                        <label class="block text-xs font-medium text-slate-300 mb-1.5">
+                        <label class="block text-xs font-semibold text-slate-700 mb-1.5">
                             カード画像から自動読み取り
-                            <span class="text-slate-400 text-[11px] font-normal ml-1">（カード番号・有効期限・名義人をAIが自動抽出）</span>
+                            <span class="text-slate-500 text-[11px] font-normal ml-1">（カード番号・有効期限・名義人をAIが自動抽出）</span>
                         </label>
                         <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-                            <label class="flex-1 cursor-pointer flex items-center justify-center gap-2 px-4 py-2.5 border-2 border-dashed border-slate-600 hover:border-indigo-400 rounded-xl bg-slate-800/50 hover:bg-slate-800 text-slate-300 transition group text-sm">
-                                <i class="fa-solid fa-camera text-indigo-400 group-hover:scale-110 transition"></i>
-                                <span id="ocrStatusText">カード写真を選択または撮影</span>
+                            <label class="flex-1 cursor-pointer flex items-center justify-center gap-2 px-4 py-2.5 border-2 border-dashed border-indigo-300 hover:border-brand-500 rounded-xl bg-white hover:bg-indigo-50/40 text-slate-700 transition group text-sm shadow-2xs">
+                                <i class="fa-solid fa-camera text-brand-600 group-hover:scale-110 transition"></i>
+                                <span id="ocrStatusText" class="font-medium">カード写真を選択または撮影</span>
                                 <input type="file" id="cardImageInput" accept="image/*" onchange="handleCardImageOCR(event)" class="hidden">
                             </label>
-                            <button type="button" id="clearCardFieldsBtn" onclick="clearCreditCardFields()" class="px-3 py-2 text-xs text-slate-400 hover:text-slate-200 rounded-lg hover:bg-slate-700 border border-slate-700 transition">
+                            <button type="button" id="clearCardFieldsBtn" onclick="clearCreditCardFields()" class="px-3 py-2 text-xs font-medium text-slate-600 hover:text-slate-800 rounded-lg hover:bg-white border border-slate-300 shadow-2xs transition">
                                 カード項目クリア
                             </button>
                         </div>
                         <!-- OCRローディング表示 -->
-                        <div id="ocrLoading" class="hidden items-center gap-2 mt-2 text-xs text-indigo-400 bg-indigo-950/40 border border-indigo-500/30 px-3 py-2 rounded-lg">
+                        <div id="ocrLoading" class="hidden items-center gap-2 mt-2 text-xs text-brand-700 bg-brand-50 border border-brand-200 px-3 py-2 rounded-lg">
                             <i class="fa-solid fa-circle-notch fa-spin"></i>
                             <span>Geminiがカード画像を解析中... カード番号・名義人・有効期限を読み取っています</span>
                         </div>
@@ -253,43 +393,43 @@
                     <!-- カード詳細情報入力フィールド -->
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         <div class="sm:col-span-2">
-                            <label class="block text-[11px] font-semibold text-slate-400 uppercase mb-1">カード番号</label>
+                            <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">カード番号</label>
                             <input type="text" id="cardPan" placeholder="1234 5678 9012 3456" maxlength="23"
-                                   class="w-full bg-slate-900 border border-slate-700 text-white rounded-lg px-3 py-1.5 text-sm font-mono tracking-wider focus:outline-none focus:border-indigo-500">
+                                   class="w-full bg-white border border-slate-300 text-slate-900 rounded-lg px-3 py-1.5 text-sm font-mono tracking-wider focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500">
                         </div>
                         <div>
-                            <label class="block text-[11px] font-semibold text-slate-400 uppercase mb-1">有効期限 (MM/YY)</label>
+                            <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">有効期限 (MM/YY)</label>
                             <input type="text" id="cardExpiry" placeholder="12/28" maxlength="5"
-                                   class="w-full bg-slate-900 border border-slate-700 text-white rounded-lg px-3 py-1.5 text-sm font-mono focus:outline-none focus:border-indigo-500">
+                                   class="w-full bg-white border border-slate-300 text-slate-900 rounded-lg px-3 py-1.5 text-sm font-mono focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500">
                         </div>
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
-                            <label class="block text-[11px] font-semibold text-slate-400 uppercase mb-1">カード名義人 (半角英字)</label>
+                            <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">カード名義人 (半角英字)</label>
                             <input type="text" id="cardHolder" placeholder="TARO YAMADA"
-                                   class="w-full bg-slate-900 border border-slate-700 text-white rounded-lg px-3 py-1.5 text-sm uppercase focus:outline-none focus:border-indigo-500">
+                                   class="w-full bg-white border border-slate-300 text-slate-900 rounded-lg px-3 py-1.5 text-sm uppercase focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500">
                         </div>
                         <div>
-                            <label class="block text-[11px] font-semibold text-slate-400 uppercase mb-1">ブランド / カード会社</label>
+                            <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">ブランド / カード会社</label>
                             <input type="text" id="cardBrand" placeholder="VISA / Mastercard / JCB 等"
-                                   class="w-full bg-slate-900 border border-slate-700 text-white rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-indigo-500">
+                                   class="w-full bg-white border border-slate-300 text-slate-900 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500">
                         </div>
                     </div>
                 </div>
 
                 <!-- メモ欄 -->
                 <div>
-                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">備考・メモ (任意)</label>
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">備考・メモ (任意)</label>
                     <textarea id="itemNotes" rows="2" placeholder="暗証番号ヒント、セキュリティ質問、契約番号など"
-                              class="w-full bg-slate-800 border border-slate-700 text-white rounded-xl px-3.5 py-2 text-sm focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition resize-none"></textarea>
+                              class="w-full bg-slate-50 border border-slate-300 text-slate-900 rounded-xl px-3.5 py-2 text-sm focus:outline-none focus:bg-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition resize-none"></textarea>
                 </div>
 
                 <!-- モーダルフッター -->
-                <div class="pt-3 border-t border-slate-800 flex items-center justify-end gap-3">
-                    <button type="button" onclick="closeItemModal()" class="px-4 py-2 text-sm font-medium text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 transition">
+                <div class="pt-3 border-t border-slate-200 flex items-center justify-end gap-3">
+                    <button type="button" onclick="closeItemModal()" class="px-4 py-2 text-sm font-semibold text-slate-600 hover:text-slate-800 rounded-xl hover:bg-slate-100 transition">
                         キャンセル
                     </button>
-                    <button type="submit" class="px-5 py-2 text-sm font-semibold text-white bg-brand-600 hover:bg-brand-500 rounded-xl transition shadow-lg shadow-brand-600/30 flex items-center gap-2">
+                    <button type="submit" class="px-5 py-2 text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700 rounded-xl transition shadow-md shadow-brand-600/25 flex items-center gap-2">
                         <i class="fa-solid fa-check"></i>
                         <span id="saveBtnText">保存する</span>
                     </button>
@@ -299,24 +439,24 @@
     </div>
 
     <!-- パスワード自動生成モーダル -->
-    <div id="generatorModal" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm hidden items-center justify-center p-4">
-        <div class="bg-slate-900 border border-slate-800 w-full max-w-md rounded-2xl shadow-2xl p-6 space-y-6">
-            <div class="flex items-center justify-between pb-3 border-b border-slate-800">
-                <h3 class="text-base font-bold text-white flex items-center gap-2">
-                    <i class="fa-solid fa-key text-amber-400"></i>
+    <div id="generatorModal" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm hidden items-center justify-center p-4">
+        <div class="bg-white border border-slate-200 w-full max-w-md rounded-2xl shadow-2xl p-6 space-y-6">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-200">
+                <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                    <i class="fa-solid fa-key text-amber-500"></i>
                     <span>パスワード自動生成ツール</span>
                 </h3>
-                <button onclick="closeGeneratorModal()" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition">
+                <button onclick="closeGeneratorModal()" class="text-slate-400 hover:text-slate-700 p-1 rounded-lg hover:bg-slate-100 transition">
                     <i class="fa-solid fa-xmark text-lg"></i>
                 </button>
             </div>
 
             <!-- 生成結果プレビュー -->
             <div class="space-y-2">
-                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">生成されたパスワード</label>
+                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider">生成されたパスワード</label>
                 <div class="relative flex items-center">
                     <input type="text" id="genResultOutput" readonly
-                           class="w-full bg-slate-950 border border-slate-700 text-amber-400 font-mono text-base font-bold tracking-wider rounded-xl px-4 py-3 pr-24 focus:outline-none select-all">
+                           class="w-full bg-slate-900 border border-slate-800 text-amber-400 font-mono text-base font-bold tracking-wider rounded-xl px-4 py-3 pr-24 focus:outline-none select-all shadow-inner">
                     <div class="absolute right-2 flex items-center gap-1">
                         <button type="button" onclick="generateRandomPassword()" title="再生成" class="p-2 text-slate-400 hover:text-amber-400 rounded-lg hover:bg-slate-800 transition">
                             <i class="fa-solid fa-arrows-rotate"></i>
@@ -328,27 +468,27 @@
                 </div>
                 <!-- 強度インジケーター -->
                 <div class="flex items-center justify-between pt-1">
-                    <div class="flex-1 bg-slate-800 h-1.5 rounded-full overflow-hidden mr-3">
+                    <div class="flex-1 bg-slate-100 h-2 rounded-full overflow-hidden mr-3">
                         <div id="genStrengthBar" class="h-full bg-emerald-500 w-full transition-all duration-300"></div>
                     </div>
-                    <span id="genStrengthLabel" class="text-[11px] font-bold text-emerald-400">強固</span>
+                    <span id="genStrengthLabel" class="text-[11px] font-bold text-emerald-600">強固</span>
                 </div>
             </div>
 
-            <!-- 桁数選択ボタン (12, 16, 20文字) ※8文字は危険なため廃止 -->
+            <!-- 桁数選択ボタン (12, 16, 20文字) -->
             <div class="space-y-2">
                 <div class="flex items-center justify-between">
-                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">文字数（桁数）</label>
-                    <span class="text-[10px] text-emerald-400 font-medium">※安全基準に基づき12文字以上のみ対応</span>
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider">文字数（桁数）</label>
+                    <span class="text-[10px] text-emerald-600 font-bold">※安全基準に基づき12文字以上のみ対応</span>
                 </div>
                 <div class="grid grid-cols-3 gap-2">
-                    <button type="button" onclick="selectLength(12)" id="lenBtn-12" class="len-btn py-2.5 rounded-xl border border-slate-700 font-semibold text-sm transition">
+                    <button type="button" onclick="selectLength(12)" id="lenBtn-12" class="len-btn py-2.5 rounded-xl border border-slate-300 font-semibold text-sm transition">
                         12 桁
                     </button>
-                    <button type="button" onclick="selectLength(16)" id="lenBtn-16" class="len-btn py-2.5 rounded-xl border border-slate-700 font-semibold text-sm transition">
+                    <button type="button" onclick="selectLength(16)" id="lenBtn-16" class="len-btn py-2.5 rounded-xl border border-slate-300 font-semibold text-sm transition">
                         16 桁 (標準)
                     </button>
-                    <button type="button" onclick="selectLength(20)" id="lenBtn-20" class="len-btn py-2.5 rounded-xl border border-slate-700 font-semibold text-sm transition">
+                    <button type="button" onclick="selectLength(20)" id="lenBtn-20" class="len-btn py-2.5 rounded-xl border border-slate-300 font-semibold text-sm transition">
                         20 桁 (最強)
                     </button>
                 </div>
@@ -356,33 +496,33 @@
 
             <!-- 文字種別オプション -->
             <div class="space-y-2.5 pt-1">
-                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">含む文字の種類</label>
+                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider">含む文字の種類</label>
                 <div class="grid grid-cols-2 gap-2 text-xs">
-                    <label class="flex items-center space-x-2 p-2 bg-slate-800/60 rounded-lg cursor-pointer hover:bg-slate-800 transition">
-                        <input type="checkbox" id="optUpper" checked onchange="generateRandomPassword()" class="rounded bg-slate-700 border-slate-600 text-brand-500 focus:ring-0">
-                        <span class="text-slate-200">大文字 (A-Z)</span>
+                    <label class="flex items-center space-x-2 p-2.5 bg-slate-50 rounded-xl cursor-pointer hover:bg-slate-100 border border-slate-200 transition">
+                        <input type="checkbox" id="optUpper" checked onchange="generateRandomPassword()" class="rounded border-slate-300 text-brand-600 focus:ring-0">
+                        <span class="text-slate-800 font-medium">大文字 (A-Z)</span>
                     </label>
-                    <label class="flex items-center space-x-2 p-2 bg-slate-800/60 rounded-lg cursor-pointer hover:bg-slate-800 transition">
-                        <input type="checkbox" id="optLower" checked onchange="generateRandomPassword()" class="rounded bg-slate-700 border-slate-600 text-brand-500 focus:ring-0">
-                        <span class="text-slate-200">小文字 (a-z)</span>
+                    <label class="flex items-center space-x-2 p-2.5 bg-slate-50 rounded-xl cursor-pointer hover:bg-slate-100 border border-slate-200 transition">
+                        <input type="checkbox" id="optLower" checked onchange="generateRandomPassword()" class="rounded border-slate-300 text-brand-600 focus:ring-0">
+                        <span class="text-slate-800 font-medium">小文字 (a-z)</span>
                     </label>
-                    <label class="flex items-center space-x-2 p-2 bg-slate-800/60 rounded-lg cursor-pointer hover:bg-slate-800 transition">
-                        <input type="checkbox" id="optNumbers" checked onchange="generateRandomPassword()" class="rounded bg-slate-700 border-slate-600 text-brand-500 focus:ring-0">
-                        <span class="text-slate-200">数字 (0-9)</span>
+                    <label class="flex items-center space-x-2 p-2.5 bg-slate-50 rounded-xl cursor-pointer hover:bg-slate-100 border border-slate-200 transition">
+                        <input type="checkbox" id="optNumbers" checked onchange="generateRandomPassword()" class="rounded border-slate-300 text-brand-600 focus:ring-0">
+                        <span class="text-slate-800 font-medium">数字 (0-9)</span>
                     </label>
-                    <label class="flex items-center space-x-2 p-2 bg-slate-800/60 rounded-lg cursor-pointer hover:bg-slate-800 transition">
-                        <input type="checkbox" id="optSymbols" checked onchange="generateRandomPassword()" class="rounded bg-slate-700 border-slate-600 text-brand-500 focus:ring-0">
-                        <span class="text-slate-200">記号 (!@#$%&*)</span>
+                    <label class="flex items-center space-x-2 p-2.5 bg-slate-50 rounded-xl cursor-pointer hover:bg-slate-100 border border-slate-200 transition">
+                        <input type="checkbox" id="optSymbols" checked onchange="generateRandomPassword()" class="rounded border-slate-300 text-brand-600 focus:ring-0">
+                        <span class="text-slate-800 font-medium">記号 (!@#$%&*)</span>
                     </label>
                 </div>
             </div>
 
             <!-- アクションボタン -->
             <div class="pt-2 flex items-center justify-between gap-3">
-                <button type="button" onclick="closeGeneratorModal()" class="w-full py-2.5 rounded-xl border border-slate-700 text-slate-300 hover:text-white hover:bg-slate-800 text-sm font-medium transition">
+                <button type="button" onclick="closeGeneratorModal()" class="w-full py-2.5 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-100 text-sm font-semibold transition">
                     閉じる
                 </button>
-                <button type="button" onclick="applyGeneratedPasswordToForm()" id="applyPasswordBtn" class="w-full py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-sm font-semibold transition shadow-lg shadow-brand-600/30 flex items-center justify-center gap-1.5">
+                <button type="button" onclick="applyGeneratedPasswordToForm()" id="applyPasswordBtn" class="w-full py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold transition shadow-md shadow-brand-600/25 flex items-center justify-center gap-1.5">
                     <i class="fa-solid fa-check"></i>
                     <span>パスワードに採用</span>
                 </button>
@@ -391,20 +531,20 @@
     </div>
 
     <!-- 削除確認モーダル -->
-    <div id="deleteModal" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm hidden items-center justify-center p-4">
-        <div class="bg-slate-900 border border-slate-800 w-full max-w-sm rounded-2xl shadow-2xl p-6 text-center space-y-4">
-            <div class="w-12 h-12 rounded-full bg-rose-500/20 text-rose-400 mx-auto flex items-center justify-center text-xl">
+    <div id="deleteModal" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm hidden items-center justify-center p-4">
+        <div class="bg-white border border-slate-200 w-full max-w-sm rounded-2xl shadow-2xl p-6 text-center space-y-4">
+            <div class="w-12 h-12 rounded-full bg-rose-50 text-rose-600 mx-auto flex items-center justify-center text-xl border border-rose-100">
                 <i class="fa-solid fa-trash-can"></i>
             </div>
             <div>
-                <h4 class="text-base font-bold text-white mb-1">登録情報を削除しますか？</h4>
-                <p id="deleteTargetName" class="text-xs text-slate-400">この操作は元に戻せません。</p>
+                <h4 class="text-base font-bold text-slate-900 mb-1">登録情報を削除しますか？</h4>
+                <p id="deleteTargetName" class="text-xs text-slate-500">この操作は元に戻せません。</p>
             </div>
             <div class="flex items-center gap-3 pt-2">
-                <button type="button" onclick="closeDeleteModal()" class="w-1/2 py-2 rounded-xl border border-slate-700 text-slate-300 hover:bg-slate-800 text-sm transition">
+                <button type="button" onclick="closeDeleteModal()" class="w-1/2 py-2 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-100 text-sm font-semibold transition">
                     キャンセル
                 </button>
-                <button type="button" id="confirmDeleteBtn" class="w-1/2 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-semibold text-sm transition shadow-lg shadow-rose-600/30">
+                <button type="button" id="confirmDeleteBtn" class="w-1/2 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-semibold text-sm transition shadow-md shadow-rose-600/20">
                     削除する
                 </button>
             </div>
@@ -418,14 +558,19 @@
     </div>
 
     <script>
+        // バージョン管理ルール:
+        // ・メジャーアップデート（大型新機能・大幅な刷新）: +1.0 (例: v1.3 -> v2.0)
+        // ・マイナーアップデート（改善・微調整・UI変更）: +0.1 (例: v1.3 -> v1.4)
+        const APP_VERSION = 'v1.5';
+
         // カテゴリー一覧定義
         const CATEGORIES = [
-            { id: 'all', name: 'すべて', icon: 'fa-solid fa-layer-group', color: 'slate' },
-            { id: 'sns', name: 'SNS', icon: 'fa-solid fa-hashtag', color: 'sky' },
-            { id: 'bank', name: '銀行・金融', icon: 'fa-solid fa-building-columns', color: 'emerald' },
-            { id: 'card', name: 'クレジットカード', icon: 'fa-solid fa-credit-card', color: 'indigo' },
-            { id: 'ec', name: 'EC・通販', icon: 'fa-solid fa-cart-shopping', color: 'amber' },
-            { id: 'other', name: 'その他・ツール', icon: 'fa-solid fa-globe', color: 'purple' }
+            { id: 'all', name: 'すべて', icon: 'fa-solid fa-layer-group', color: 'slate', badgeBg: 'bg-slate-100', badgeText: 'text-slate-700', badgeBorder: 'border-slate-200' },
+            { id: 'sns', name: 'SNS', icon: 'fa-solid fa-hashtag', color: 'sky', badgeBg: 'bg-sky-50', badgeText: 'text-sky-700', badgeBorder: 'border-sky-200' },
+            { id: 'bank', name: '銀行・金融', icon: 'fa-solid fa-building-columns', color: 'emerald', badgeBg: 'bg-emerald-50', badgeText: 'text-emerald-700', badgeBorder: 'border-emerald-200' },
+            { id: 'card', name: 'クレジットカード', icon: 'fa-solid fa-credit-card', color: 'indigo', badgeBg: 'bg-indigo-50', badgeText: 'text-indigo-700', badgeBorder: 'border-indigo-200' },
+            { id: 'ec', name: 'EC・通販', icon: 'fa-solid fa-cart-shopping', color: 'amber', badgeBg: 'bg-amber-50', badgeText: 'text-amber-800', badgeBorder: 'border-amber-200' },
+            { id: 'other', name: 'その他・ツール', icon: 'fa-solid fa-globe', color: 'purple', badgeBg: 'bg-purple-50', badgeText: 'text-purple-700', badgeBorder: 'border-purple-200' }
         ];
 
         // 初期サンプルデータ（ユーザーが初回起動時に確認しやすいよう設定）
@@ -479,6 +624,11 @@
         const STORAGE_KEY = 'keyvault_accounts_v1';
 
         window.addEventListener('DOMContentLoaded', () => {
+            // 画面内の全バージョン表示バッジを一括反映
+            document.querySelectorAll('.app-version-badge').forEach(badge => {
+                badge.innerText = APP_VERSION;
+            });
+            setupAppleTouchIconPng();
             loadStoredData();
             initCategoryTabs();
             initCategoryRadioGroup();
@@ -511,10 +661,10 @@
             const container = document.getElementById('categoryTabs');
             container.innerHTML = CATEGORIES.map(cat => `
                 <button onclick="setCategoryFilter('${cat.id}')" id="tab-${cat.id}"
-                        class="px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition flex items-center gap-2 ${
+                        class="px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition flex items-center gap-2 ${
                             appState.selectedCategory === cat.id 
-                            ? 'bg-brand-600 text-white shadow-md shadow-brand-600/30' 
-                            : 'bg-slate-800/60 text-slate-400 hover:text-white hover:bg-slate-800'
+                            ? 'bg-brand-600 text-white shadow-md shadow-brand-600/25' 
+                            : 'bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200 shadow-2xs'
                         }">
                     <i class="${cat.icon}"></i>
                     <span>${cat.name}</span>
@@ -529,9 +679,9 @@
             container.innerHTML = selectableCats.map((cat, idx) => `
                 <label class="cursor-pointer">
                     <input type="radio" name="itemCategory" value="${cat.id}" ${idx === 0 ? 'checked' : ''} onchange="onCategoryRadioChange(this.value)" class="peer hidden">
-                    <div class="p-2.5 rounded-xl border border-slate-700 bg-slate-800/60 peer-checked:border-brand-500 peer-checked:bg-brand-500/20 peer-checked:text-white text-slate-400 text-center transition flex flex-col items-center gap-1">
+                    <div class="p-2.5 rounded-xl border border-slate-200 bg-white peer-checked:border-brand-500 peer-checked:bg-brand-50 peer-checked:text-brand-700 text-slate-600 text-center transition flex flex-col items-center gap-1 shadow-2xs">
                         <i class="${cat.icon} text-sm"></i>
-                        <span class="text-[11px] font-semibold">${cat.name}</span>
+                        <span class="text-[11px] font-bold">${cat.name}</span>
                     </div>
                 </label>
             `).join('');
@@ -575,113 +725,163 @@
             container.innerHTML = filtered.map(item => createItemCardHTML(item)).join('');
         }
 
-        // アイテムカードのHTML生成
+        // アイテムカードのHTML生成（明るいカードデザイン）
         function createItemCardHTML(item) {
+            const catObj = CATEGORIES.find(c => c.id === item.category) || { name: 'その他', icon: 'fa-solid fa-globe', color: 'slate', badgeBg: 'bg-slate-100', badgeText: 'text-slate-700', badgeBorder: 'border-slate-200' };
             const isCard = item.category === 'card';
-            const catObj = CATEGORIES.find(c => c.id === item.category) || { name: 'その他', icon: 'fa-solid fa-folder', color: 'slate' };
-
-            // クレジットカード表示用
-            const cardMasked = item.cardPan ? item.cardPan.replace(/\d(?=\d{4})/g, "•") : '';
 
             return `
-                <div class="card-glass rounded-2xl p-5 hover:border-slate-600 transition-all duration-200 flex flex-col justify-between group shadow-xl">
-                    <div class="space-y-4">
-                        <!-- カードヘッダー -->
-                        <div class="flex items-start justify-between gap-3">
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700/80 flex items-center justify-center text-brand-400 group-hover:scale-105 transition">
-                                    <i class="${catObj.icon} text-base"></i>
-                                </div>
-                                <div>
-                                    <h3 class="text-sm font-bold text-white group-hover:text-brand-300 transition line-clamp-1">${escapeHtml(item.title)}</h3>
-                                    <div class="flex items-center gap-2 mt-0.5">
-                                        <span class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700/70">
-                                            ${catObj.name}
-                                        </span>
-                                        ${item.url ? `
-                                            <a href="${escapeHtml(item.url)}" target="_blank" rel="noopener noreferrer" class="text-xs text-slate-400 hover:text-brand-400 flex items-center gap-1 transition" title="リンク先を開く">
-                                                <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
-                                            </a>
-                                        ` : ''}
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="flex items-center space-x-1">
-                                <button onclick="openEditItemModal('${item.id}')" title="編集" class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition">
-                                    <i class="fa-solid fa-pen-to-square text-xs"></i>
-                                </button>
-                                <button onclick="promptDeleteItem('${item.id}')" title="削除" class="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-slate-800 transition">
-                                    <i class="fa-solid fa-trash-can text-xs"></i>
-                                </button>
-                            </div>
+                <div onclick="openDetailModal('${item.id}')" role="button" tabindex="0"
+                     class="card-glass rounded-2xl p-4 sm:p-5 hover:border-brand-300 hover:-translate-y-0.5 transition-all duration-200 cursor-pointer flex items-center justify-between group active:scale-[0.99]">
+                    <div class="flex items-center gap-3.5 min-w-0">
+                        <div class="w-11 h-11 rounded-xl bg-brand-50 border border-brand-100 flex items-center justify-center text-brand-600 group-hover:scale-105 group-hover:bg-brand-600 group-hover:text-white transition shrink-0 shadow-2xs">
+                            <i class="${catObj.icon} text-lg"></i>
                         </div>
-
-                        <!-- クレジットカード専用のプレビューバッジ -->
-                        ${isCard && item.cardPan ? `
-                            <div class="credit-card-preview rounded-xl p-3.5 text-white space-y-2 relative overflow-hidden">
-                                <div class="flex justify-between items-center text-xs opacity-80">
-                                    <span class="tracking-widest font-mono">${escapeHtml(item.cardBrand || 'CREDIT CARD')}</span>
-                                    <i class="fa-solid fa-wifi text-[10px] rotate-90"></i>
-                                </div>
-                                <div class="font-mono text-sm tracking-wider font-bold text-amber-200">
-                                    ${escapeHtml(cardMasked || item.cardPan)}
-                                </div>
-                                <div class="flex justify-between items-center text-[10px] font-mono text-slate-300 pt-1">
-                                    <span class="uppercase truncate max-w-[120px]">${escapeHtml(item.cardHolder || 'CARD HOLDER')}</span>
-                                    <span>EXP: ${escapeHtml(item.cardExpiry || '--/--')}</span>
-                                </div>
-                            </div>
-                        ` : ''}
-
-                        <!-- ID / ユーザー名フィールド -->
-                        <div class="bg-slate-900/80 rounded-xl p-2.5 border border-slate-800 flex items-center justify-between">
-                            <div class="min-w-0 pr-2">
-                                <span class="text-[10px] uppercase font-bold text-slate-500 block">ID / ユーザー名</span>
-                                <span class="text-xs text-slate-200 font-mono truncate block select-all">${escapeHtml(item.username)}</span>
-                            </div>
-                            <button onclick="copyToClipboard('${escapeJs(item.username)}', 'IDをコピーしました')" title="IDをコピー" class="p-1.5 rounded-lg text-slate-400 hover:text-brand-400 hover:bg-slate-800 transition">
-                                <i class="fa-regular fa-copy text-xs"></i>
-                            </button>
-                        </div>
-
-                        <!-- パスワードフィールド -->
-                        <div class="bg-slate-900/80 rounded-xl p-2.5 border border-slate-800 flex items-center justify-between">
-                            <div class="min-w-0 pr-2 flex-1">
-                                <span class="text-[10px] uppercase font-bold text-slate-500 block">パスワード</span>
-                                <div class="flex items-center gap-2">
-                                    <span id="pw-text-${item.id}" class="text-xs text-slate-200 font-mono tracking-wider truncate block" data-masked="true">
-                                        ••••••••••••
+                        <div class="min-w-0">
+                            <h3 class="text-sm sm:text-base font-bold text-slate-800 group-hover:text-brand-600 transition truncate pr-1">
+                                ${escapeHtml(item.title)}
+                            </h3>
+                            <div class="flex items-center gap-1.5 mt-0.5">
+                                <span class="text-[10px] font-bold tracking-wider px-2 py-0.5 rounded-full ${catObj.badgeBg} ${catObj.badgeText} border ${catObj.badgeBorder}">
+                                    ${catObj.name}
+                                </span>
+                                ${isCard ? `
+                                    <span class="text-[10px] text-indigo-600 font-semibold flex items-center gap-1 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100">
+                                        <i class="fa-solid fa-credit-card text-[9px]"></i>Card
                                     </span>
-                                </div>
-                            </div>
-                            <div class="flex items-center gap-1">
-                                <button onclick="toggleCardPasswordVisibility('${item.id}', '${escapeJs(item.password)}', this)" title="表示切替" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition">
-                                    <i class="fa-regular fa-eye text-xs"></i>
-                                </button>
-                                <button onclick="copyToClipboard('${escapeJs(item.password)}', 'パスワードをコピーしました')" title="パスワードをコピー" class="p-1.5 rounded-lg text-slate-400 hover:text-brand-400 hover:bg-slate-800 transition">
-                                    <i class="fa-regular fa-copy text-xs"></i>
-                                </button>
+                                ` : ''}
                             </div>
                         </div>
-
-                        <!-- 備考/メモ (存在する場合) -->
-                        ${item.notes ? `
-                            <p class="text-xs text-slate-400 bg-slate-950/40 p-2 rounded-lg border border-slate-800/50 line-clamp-2">
-                                <i class="fa-solid fa-circle-info text-[10px] text-slate-500 mr-1"></i>${escapeHtml(item.notes)}
-                            </p>
-                        ` : ''}
                     </div>
-
-                    <div class="pt-3 mt-3 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-500">
-                        <span>登録: ${formatDate(item.createdAt)}</span>
-                        ${isCard && item.cardPan ? `
-                            <button onclick="copyToClipboard('${escapeJs(item.cardPan)}', 'カード番号をコピーしました')" class="text-indigo-400 hover:text-indigo-300 font-medium">
-                                番号コピー
-                            </button>
-                        ` : ''}
+                    <div class="flex items-center gap-2 pl-2 text-slate-400 group-hover:text-brand-600 transition shrink-0">
+                        <span class="text-xs font-semibold text-slate-500 group-hover:text-brand-600 hidden sm:inline">詳細</span>
+                        <div class="w-8 h-8 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center group-hover:bg-brand-600 group-hover:border-brand-600 group-hover:text-white text-slate-400 transition shadow-2xs">
+                            <i class="fa-solid fa-chevron-right text-xs"></i>
+                        </div>
                     </div>
                 </div>
             `;
+        }
+
+        let currentDetailItem = null;
+        let isDetailPasswordMasked = true;
+
+        // 詳細モーダルを開く
+        function openDetailModal(itemId) {
+            const item = appState.items.find(i => i.id === itemId);
+            if (!item) return;
+
+            currentDetailItem = item;
+            isDetailPasswordMasked = true;
+
+            const catObj = CATEGORIES.find(c => c.id === item.category) || { name: 'その他', icon: 'fa-solid fa-globe', color: 'slate' };
+
+            // タイトルとカテゴリ
+            document.getElementById('detailTitle').innerText = item.title;
+            document.getElementById('detailCategoryBadge').innerText = catObj.name;
+            document.getElementById('detailCatIcon').innerHTML = `<i class="${catObj.icon} text-base"></i>`;
+
+            // URLリンク
+            const urlLink = document.getElementById('detailUrlLink');
+            if (item.url) {
+                urlLink.href = item.url;
+                urlLink.classList.remove('hidden');
+                urlLink.classList.add('inline-flex');
+            } else {
+                urlLink.classList.add('hidden');
+                urlLink.classList.remove('inline-flex');
+            }
+
+            // ID / ユーザー名
+            document.getElementById('detailUsername').innerText = item.username || '--';
+
+            // パスワード
+            const pwEl = document.getElementById('detailPassword');
+            pwEl.innerText = '••••••••••••';
+            pwEl.setAttribute('data-masked', 'true');
+            document.getElementById('detailPwEyeIcon').className = 'fa-regular fa-eye text-sm';
+
+            // クレジットカード表示切り替え
+            const cardContainer = document.getElementById('detailCardContainer');
+            if (item.category === 'card' && item.cardPan) {
+                cardContainer.classList.remove('hidden');
+                document.getElementById('detailCardPan').innerText = item.cardPan;
+                document.getElementById('detailCardHolder').innerText = item.cardHolder || 'CARD HOLDER';
+                document.getElementById('detailCardExpiry').innerText = item.cardExpiry || '--/--';
+                document.getElementById('detailCardBrand').innerText = (item.cardBrand || 'CREDIT CARD').toUpperCase();
+            } else {
+                cardContainer.classList.add('hidden');
+            }
+
+            // 備考 / メモ
+            const notesContainer = document.getElementById('detailNotesContainer');
+            const notesEl = document.getElementById('detailNotes');
+            if (item.notes) {
+                notesEl.innerText = item.notes;
+                notesContainer.classList.remove('hidden');
+            } else {
+                notesContainer.classList.add('hidden');
+            }
+
+            // 登録日時
+            document.getElementById('detailDateInfo').innerText = `登録日: ${formatDate(item.createdAt || Date.now())}`;
+
+            // モーダル表示
+            document.getElementById('detailModal').classList.remove('hidden');
+            document.getElementById('detailModal').classList.add('flex');
+        }
+
+        function closeDetailModal() {
+            document.getElementById('detailModal').classList.add('hidden');
+            document.getElementById('detailModal').classList.remove('flex');
+            currentDetailItem = null;
+        }
+
+        function toggleDetailPasswordVisibility() {
+            if (!currentDetailItem) return;
+            const pwEl = document.getElementById('detailPassword');
+            const eyeIcon = document.getElementById('detailPwEyeIcon');
+
+            if (isDetailPasswordMasked) {
+                pwEl.innerText = currentDetailItem.password;
+                pwEl.setAttribute('data-masked', 'false');
+                eyeIcon.className = 'fa-regular fa-eye-slash text-sm text-brand-600';
+                isDetailPasswordMasked = false;
+            } else {
+                pwEl.innerText = '••••••••••••';
+                pwEl.setAttribute('data-masked', 'true');
+                eyeIcon.className = 'fa-regular fa-eye text-sm text-slate-400';
+                isDetailPasswordMasked = true;
+            }
+        }
+
+        function copyDetailUsername() {
+            if (!currentDetailItem || !currentDetailItem.username) return;
+            copyToClipboard(currentDetailItem.username, 'ユーザーIDをコピーしました');
+        }
+
+        function copyDetailPassword() {
+            if (!currentDetailItem || !currentDetailItem.password) return;
+            copyToClipboard(currentDetailItem.password, 'パスワードをコピーしました');
+        }
+
+        function copyDetailCardNumber() {
+            if (!currentDetailItem || !currentDetailItem.cardPan) return;
+            copyToClipboard(currentDetailItem.cardPan, 'カード番号をコピーしました');
+        }
+
+        function editFromDetailModal() {
+            if (!currentDetailItem) return;
+            const id = currentDetailItem.id;
+            closeDetailModal();
+            openEditItemModal(id);
+        }
+
+        function deleteFromDetailModal() {
+            if (!currentDetailItem) return;
+            const id = currentDetailItem.id;
+            closeDetailModal();
+            promptDeleteItem(id);
         }
 
         function openGeneratorModal() {
@@ -702,12 +902,12 @@
                 if (btn) {
                     if (l === len) {
                         if (l === 20) {
-                            btn.className = 'len-btn py-2.5 rounded-xl border border-indigo-400 bg-gradient-to-r from-brand-600 to-indigo-600 text-white font-bold text-sm transition shadow-lg shadow-indigo-500/25';
+                            btn.className = 'len-btn py-2.5 rounded-xl border border-indigo-400 bg-gradient-to-r from-brand-600 to-indigo-600 text-white font-bold text-sm transition shadow-md shadow-indigo-500/25';
                         } else {
-                            btn.className = 'len-btn py-2.5 rounded-xl border border-brand-500 bg-brand-600 text-white font-semibold text-sm transition shadow-md shadow-brand-500/20';
+                            btn.className = 'len-btn py-2.5 rounded-xl border border-brand-500 bg-brand-600 text-white font-bold text-sm transition shadow-sm shadow-brand-500/20';
                         }
                     } else {
-                        btn.className = 'len-btn py-2.5 rounded-xl border border-slate-700 bg-slate-800/60 text-slate-300 hover:bg-slate-800 font-semibold text-sm transition';
+                        btn.className = 'len-btn py-2.5 rounded-xl border border-slate-300 bg-white text-slate-700 hover:bg-slate-100 font-semibold text-sm transition shadow-2xs';
                     }
                 }
             });
@@ -763,17 +963,17 @@
                 bar.style.width = '60%';
                 bar.className = 'h-full bg-blue-500 w-full transition-all duration-300';
                 label.innerText = '安全 (12桁)';
-                label.className = 'text-[11px] font-bold text-blue-400';
+                label.className = 'text-[11px] font-bold text-blue-600';
             } else if (length <= 16) {
                 bar.style.width = '85%';
                 bar.className = 'h-full bg-emerald-500 w-full transition-all duration-300';
                 label.innerText = '極めて強固 (16桁)';
-                label.className = 'text-[11px] font-bold text-emerald-400';
+                label.className = 'text-[11px] font-bold text-emerald-600';
             } else {
                 bar.style.width = '100%';
-                bar.className = 'h-full bg-gradient-to-r from-emerald-400 to-indigo-400 w-full transition-all duration-300';
+                bar.className = 'h-full bg-gradient-to-r from-emerald-500 to-indigo-600 w-full transition-all duration-300';
                 label.innerText = '最強・鉄壁 (20桁)';
-                label.className = 'text-[11px] font-extrabold text-indigo-300';
+                label.className = 'text-[11px] font-extrabold text-brand-700';
             }
         }
 
@@ -1174,10 +1374,10 @@ Markdownブロック(\`\`\`json)などは付けずにプレーンなJSONテキ�
 
             msgEl.innerText = message;
             if (isError) {
-                toast.className = 'fixed bottom-6 right-6 z-50 transform translate-y-0 opacity-100 transition-all duration-300 flex items-center gap-3 px-4 py-3 rounded-xl shadow-2xl text-sm font-medium border bg-rose-950/90 text-rose-200 border-rose-500/50 backdrop-blur-md';
-                iconEl.className = 'fa-solid fa-triangle-exclamation text-rose-400';
+                toast.className = 'fixed bottom-6 right-6 z-50 transform translate-y-0 opacity-100 transition-all duration-300 flex items-center gap-3 px-4 py-3 rounded-xl shadow-xl text-sm font-semibold border bg-rose-600 text-white border-rose-700';
+                iconEl.className = 'fa-solid fa-triangle-exclamation text-white';
             } else {
-                toast.className = 'fixed bottom-6 right-6 z-50 transform translate-y-0 opacity-100 transition-all duration-300 flex items-center gap-3 px-4 py-3 rounded-xl shadow-2xl text-sm font-medium border bg-slate-900/95 text-emerald-300 border-emerald-500/40 backdrop-blur-md';
+                toast.className = 'fixed bottom-6 right-6 z-50 transform translate-y-0 opacity-100 transition-all duration-300 flex items-center gap-3 px-4 py-3 rounded-xl shadow-xl text-sm font-semibold border bg-slate-900 text-white border-slate-800';
                 iconEl.className = 'fa-solid fa-circle-check text-emerald-400';
             }
 
@@ -1243,6 +1443,60 @@ Markdownブロック(\`\`\`json)などは付けずにプレーンなJSONテキ�
         function escapeJs(str) {
             if (!str) return '';
             return String(str).replace(/'/g, "\\'").replace(/"/g, '\\"');
+        }
+
+        // iOS Safariがホーム画面追加時にPNG形式を要求する場合に備え、Canvasで高解像度アイコンを自動生成
+        function setupAppleTouchIconPng() {
+            try {
+                const canvas = document.createElement('canvas');
+                canvas.width = 180;
+                canvas.height = 180;
+                const ctx = canvas.getContext('2d');
+                if (!ctx) return;
+
+                // 背景グラデーション
+                const grad = ctx.createLinearGradient(0, 0, 180, 180);
+                grad.addColorStop(0, '#4f46e5');
+                grad.addColorStop(1, '#312e81');
+                ctx.fillStyle = grad;
+                
+                // 角丸四角形
+                ctx.beginPath();
+                ctx.roundRect(0, 0, 180, 180, 40);
+                ctx.fill();
+
+                // 盾の半透明シルエット
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.22)';
+                ctx.beginPath();
+                ctx.moveTo(90, 28);
+                ctx.lineTo(138, 46);
+                ctx.lineTo(138, 86);
+                ctx.bezierCurveTo(138, 118, 90, 146, 90, 146);
+                ctx.bezierCurveTo(90, 146, 42, 118, 42, 86);
+                ctx.lineTo(42, 46);
+                ctx.closePath();
+                ctx.fill();
+
+                // 鍵のシンボル（頭部丸）
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath();
+                ctx.arc(90, 72, 14, 0, Math.PI * 2);
+                ctx.fill();
+
+                // 鍵の軸
+                ctx.fillRect(84, 82, 12, 38);
+                // 鍵の突起
+                ctx.fillRect(90, 96, 14, 8);
+                ctx.fillRect(90, 112, 11, 8);
+
+                const pngDataUrl = canvas.toDataURL('image/png');
+                const link = document.getElementById('appleTouchIcon');
+                if (link) {
+                    link.href = pngDataUrl;
+                }
+            } catch (e) {
+                // 生成に失敗した場合はSVG Data-URIのフォールバックを使用
+            }
         }
     </script>
 </body>
